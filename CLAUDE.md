@@ -118,9 +118,14 @@ pending.json    → Failed imports awaiting manual processing
 ```
 
 **Facet Values:**
-- Topics: security, programming, ai-ml, entrepreneurship, devops, databases, web-development, career, other
-- Format: tutorial, deep-dive, news, interview, review, other
-- Difficulty: beginner, intermediate, advanced
+- Topics (list, can have multiple): security, programming, ai-ml, entrepreneurship, devops, databases, web-development, career, other
+- Format (single value): tutorial, deep-dive, news, interview, review, other
+- Difficulty (single value): beginner, intermediate, advanced
+
+**Search API Endpoints** (when search_server.py is running):
+- `GET /api/search?q=<query>` - Full-text search with optional filters (`topic`, `format`, `difficulty`, `channel`)
+- `GET /api/stats` - Index statistics
+- `POST /api/rebuild-index` - Rebuild the search index
 
 ## Dependencies
 

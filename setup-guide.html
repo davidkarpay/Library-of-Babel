@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Guide - YouTube Learning Library</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --bg-light: #16213e;
+            --accent: #e94560;
+            --text: #eee;
+            --text-muted: #888;
+            --border: #333;
+            --success: #4ade80;
+            --warning: #fbbf24;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            color: var(--accent);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .time-estimate {
+            display: inline-block;
+            background: var(--bg-light);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        h2 {
+            color: var(--accent);
+            font-size: 1.8rem;
+            margin: 3rem 0 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h3 {
+            color: var(--text);
+            font-size: 1.3rem;
+            margin: 2rem 0 1rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        .step {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .step-number {
+            background: var(--accent);
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .command-block {
+            position: relative;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 0.95rem;
+            overflow-x: auto;
+        }
+
+        .command-block code {
+            color: #58a6ff;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .expected-output {
+            background: #1c2128;
+            border-left: 3px solid var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .expected-output::before {
+            content: "Expected output:";
+            display: block;
+            color: var(--success);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .tip {
+            background: rgba(233, 69, 96, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .tip::before {
+            content: "Tip: ";
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 3px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .warning::before {
+            content: "Important: ";
+            color: var(--warning);
+            font-weight: bold;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .checklist input[type="checkbox"] {
+            width: 1.5rem;
+            height: 1.5rem;
+            accent-color: var(--accent);
+        }
+
+        .collapsible {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .collapsible-header {
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .collapsible-header::after {
+            content: "+";
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .collapsible.open .collapsible-header::after {
+            content: "-";
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 0 1rem 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .collapsible.open .collapsible-content {
+            display: block;
+        }
+
+        .glossary-term {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .workflow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 0.5rem;
+        }
+
+        .workflow-item {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .workflow-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .workflow-arrow {
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-size: 16px;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .workflow {
+                flex-direction: column;
+            }
+
+            .workflow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>YouTube Learning Library</h1>
+            <p>Setup Guide for Mac</p>
+            <p>A step-by-step guide to get your personal video transcript library running</p>
+            <div class="time-estimate">Setup time: ~30 minutes</div>
+        </header>
+
+        <section>
+            <h2>What This Tool Does</h2>
+            <p>This tool creates a personal, searchable library from YouTube videos. It downloads transcripts, uses AI to analyze and summarize content, and builds a beautiful website you can browse offline.</p>
+
+            <div class="workflow">
+                <div class="workflow-item">
+                    <div class="workflow-icon">YouTube</div>
+                    <div>Video URL</div>
+                </div>
+                <div class="workflow-arrow">&#8594;</div>
+                <div class="workflow-item">
+                    <div class="workflow-icon">AI</div>
+                    <div>Analysis</div>
+                </div>
+                <div class="workflow-arrow">&#8594;</div>
+                <div class="workflow-item">
+                    <div class="workflow-icon">Library</div>
+                    <div>Searchable Site</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Before You Start</h2>
+            <p>Make sure you have:</p>
+            <ul class="checklist">
+                <li><input type="checkbox"> A Mac computer (any recent model)</li>
+                <li><input type="checkbox"> At least 8GB of RAM</li>
+                <li><input type="checkbox"> At least 10GB of free disk space</li>
+                <li><input type="checkbox"> An internet connection</li>
+                <li><input type="checkbox"> About 30 minutes of time</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Setup Steps</h2>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Open Terminal</div>
+                </div>
+                <p>Terminal is the app where you'll type commands. Don't worry - we'll tell you exactly what to type!</p>
+                <p><strong>To open Terminal:</strong></p>
+                <ol>
+                    <li>Press <strong>Command + Space</strong> on your keyboard (this opens Spotlight search)</li>
+                    <li>Type <strong>Terminal</strong></li>
+                    <li>Press <strong>Enter</strong></li>
+                </ol>
+                <p>You'll see a window with a blinking cursor. This is where you'll paste the commands from this guide.</p>
+                <div class="tip">Keep Terminal open throughout this entire setup process.</div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Check Python Installation</div>
+                </div>
+                <p>Python is a programming language this tool is built with. Most Macs already have it installed.</p>
+                <p>Copy and paste this command into Terminal, then press Enter:</p>
+                <div class="command-block">
+                    <code>python3 --version</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'python3 --version')">Copy</button>
+                </div>
+                <div class="expected-output">
+                    Python 3.11.6 (or any version 3.9 or higher)
+                </div>
+
+                <div class="collapsible">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <span>What if Python is not installed?</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <p>If you see "command not found", you need to install Python:</p>
+                        <ol>
+                            <li>Go to <a href="https://www.python.org/downloads/" target="_blank">python.org/downloads</a></li>
+                            <li>Click the yellow "Download Python" button</li>
+                            <li>Open the downloaded file and follow the installer</li>
+                            <li>Close Terminal and reopen it</li>
+                            <li>Try the command again</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Install Required Packages</div>
+                </div>
+                <p>This installs the helper libraries the tool needs. Copy and paste this entire command:</p>
+                <div class="command-block">
+                    <code>pip3 install youtube-transcript-api requests jinja2 scrapetube flask whoosh</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'pip3 install youtube-transcript-api requests jinja2 scrapetube flask whoosh')">Copy</button>
+                </div>
+                <p>You'll see a lot of text scrolling. Wait until it finishes and you see your cursor again.</p>
+                <div class="expected-output">
+                    Successfully installed youtube-transcript-api-... requests-... jinja2-... (and more)
+                </div>
+
+                <div class="collapsible">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <span>What do these packages do?</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <ul>
+                            <li><strong>youtube-transcript-api</strong> - Downloads transcripts from YouTube videos</li>
+                            <li><strong>requests</strong> - Lets the tool talk to websites</li>
+                            <li><strong>jinja2</strong> - Creates the HTML pages for your library</li>
+                            <li><strong>scrapetube</strong> - Finds all videos on a YouTube channel</li>
+                            <li><strong>flask</strong> - Powers the search feature</li>
+                            <li><strong>whoosh</strong> - Makes searching fast</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Install Ollama (The AI Brain)</div>
+                </div>
+                <p>Ollama is a free app that runs AI on your Mac. It's what makes the tool smart - it analyzes videos and creates summaries.</p>
+                <p><strong>Option A - Download from website (easiest):</strong></p>
+                <ol>
+                    <li>Go to <a href="https://ollama.ai" target="_blank">ollama.ai</a></li>
+                    <li>Click "Download for macOS"</li>
+                    <li>Open the downloaded file and drag Ollama to your Applications folder</li>
+                    <li>Open Ollama from your Applications folder (you'll see a llama icon in your menu bar)</li>
+                </ol>
+
+                <p><strong>Option B - Using Homebrew (if you have it):</strong></p>
+                <div class="command-block">
+                    <code>brew install ollama</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'brew install ollama')">Copy</button>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <div class="step-title">Download the AI Model</div>
+                </div>
+                <p>Now we need to download the AI model that Ollama will use. This is about 4.7GB, so it may take 5-15 minutes depending on your internet speed.</p>
+                <div class="command-block">
+                    <code>ollama pull llama3.1:8b</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'ollama pull llama3.1:8b')">Copy</button>
+                </div>
+                <div class="expected-output">
+                    pulling manifest<br>
+                    pulling 8eeb52dfb3bb... 100% |████████████████| 4.7 GB<br>
+                    success
+                </div>
+                <div class="tip">This only needs to be done once. The model stays on your computer.</div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">6</div>
+                    <div class="step-title">Start the Ollama Server</div>
+                </div>
+                <p>The AI needs to be running in the background while you use the tool.</p>
+                <div class="command-block">
+                    <code>ollama serve</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'ollama serve')">Copy</button>
+                </div>
+                <div class="warning">This command keeps running and won't give you your cursor back. That's normal! It means the AI is ready and waiting.</div>
+                <p><strong>Now open a NEW Terminal window:</strong></p>
+                <ol>
+                    <li>With Terminal in focus, press <strong>Command + N</strong></li>
+                    <li>A new Terminal window will appear</li>
+                    <li>Use this new window for the remaining commands</li>
+                </ol>
+                <div class="tip">If you downloaded Ollama from their website and it's running in your menu bar, you can skip this step - it starts automatically!</div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">7</div>
+                    <div class="step-title">Navigate to the Tool Folder</div>
+                </div>
+                <p>In your new Terminal window, go to where you saved the YouTube Learning Library files:</p>
+                <div class="command-block">
+                    <code>cd ~/Desktop/youtube_transcript_to_md</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'cd ~/Desktop/youtube_transcript_to_md')">Copy</button>
+                </div>
+                <div class="tip">If you saved the folder somewhere else, replace the path above with your actual location.</div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">8</div>
+                    <div class="step-title">Test It Works!</div>
+                </div>
+                <p>Let's add your first video to make sure everything is working:</p>
+                <div class="command-block">
+                    <code>python3 youtube_transcript_to_md.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ"</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'python3 youtube_transcript_to_md.py \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\"')">Copy</button>
+                </div>
+                <p>You'll see progress messages as the AI analyzes the video. This takes 1-3 minutes.</p>
+                <div class="expected-output">
+                    Fetching transcript for dQw4w9WgXcQ...<br>
+                    Generating metadata with LLM analysis...<br>
+                    &nbsp;&nbsp;Chunking transcript into sections...<br>
+                    &nbsp;&nbsp;Analyzing 5 sections...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Section 1/5...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Section 2/5...<br>
+                    ...<br>
+                    Done! Files created:<br>
+                    &nbsp;&nbsp;Transcript: transcripts/never-gonna-give-you-up.md<br>
+                    &nbsp;&nbsp;Metadata: metadata/never-gonna-give-you-up.json
+                </div>
+                <p>Congratulations! You've added your first video!</p>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">9</div>
+                    <div class="step-title">Generate Your Library Website</div>
+                </div>
+                <p>Now let's build the browsable website:</p>
+                <div class="command-block">
+                    <code>python3 library.py</code>
+                    <button class="copy-btn" onclick="copyCommand(this, 'python3 library.py')">Copy</button>
+                </div>
+                <div class="expected-output">
+                    Loading library...<br>
+                    Found 1 entries<br>
+                    Generating index page...<br>
+                    ...<br>
+                    Site generated at: site<br>
+                    Open site/index.html in a browser to view
+                </div>
+                <p>To view your library, open the <strong>site</strong> folder and double-click <strong>index.html</strong>!</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Common Commands</h2>
+            <p>Here are the commands you'll use regularly:</p>
+
+            <h3>Add a Single Video</h3>
+            <div class="command-block">
+                <code>python3 youtube_transcript_to_md.py "YOUTUBE_URL_HERE"</code>
+                <button class="copy-btn" onclick="copyCommand(this, 'python3 youtube_transcript_to_md.py \"YOUTUBE_URL_HERE\"')">Copy</button>
+            </div>
+
+            <h3>Import All Videos from a Channel</h3>
+            <div class="command-block">
+                <code>python3 channel_import.py "https://www.youtube.com/@ChannelName"</code>
+                <button class="copy-btn" onclick="copyCommand(this, 'python3 channel_import.py \"https://www.youtube.com/@ChannelName\"')">Copy</button>
+            </div>
+
+            <h3>Import Multiple Videos from a List</h3>
+            <p>Create a text file with YouTube URLs (one per line), then run:</p>
+            <div class="command-block">
+                <code>python3 batch_import.py your_list.md</code>
+                <button class="copy-btn" onclick="copyCommand(this, 'python3 batch_import.py your_list.md')">Copy</button>
+            </div>
+
+            <h3>Rebuild the Website</h3>
+            <p>Run this after adding new videos:</p>
+            <div class="command-block">
+                <code>python3 library.py</code>
+                <button class="copy-btn" onclick="copyCommand(this, 'python3 library.py')">Copy</button>
+            </div>
+
+            <h3>Start the Search Server</h3>
+            <p>This lets you search through all transcripts:</p>
+            <div class="command-block">
+                <code>python3 search_server.py</code>
+                <button class="copy-btn" onclick="copyCommand(this, 'python3 search_server.py')">Copy</button>
+            </div>
+            <p>Then visit <a href="http://localhost:5000">http://localhost:5000</a> in your browser.</p>
+        </section>
+
+        <section>
+            <h2>Troubleshooting</h2>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span>"command not found: python3"</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>Python isn't installed. Go to <a href="https://python.org/downloads" target="_blank">python.org/downloads</a> and install it, then restart Terminal.</p>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span>"command not found: pip3"</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>Try using <code>python3 -m pip install</code> instead of <code>pip3 install</code>.</p>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span>"No transcript available" error</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>This video doesn't have captions/subtitles on YouTube. You can:</p>
+                    <ul>
+                        <li>Try a different video</li>
+                        <li>Use the manual import: <code>python3 manual_import.py "URL"</code> and paste the transcript yourself</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span>"Ollama request failed" or AI analysis not working</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>Make sure Ollama is running:</p>
+                    <ol>
+                        <li>Check if the Ollama llama icon is in your menu bar (top of screen)</li>
+                        <li>If not, open Ollama from your Applications folder</li>
+                        <li>Or run <code>ollama serve</code> in a Terminal window</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span>"Permission denied" error</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>Try adding <code>sudo</code> before the command and enter your Mac password when prompted:</p>
+                    <div class="command-block">
+                        <code>sudo pip3 install youtube-transcript-api requests jinja2 scrapetube flask whoosh</code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span>Processing is very slow</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>This is normal! The AI runs locally on your Mac, which takes time. Each 3-minute section takes about 30-60 seconds to analyze. A 20-minute video might take 5-10 minutes total.</p>
+                    <p>Newer Apple Silicon Macs (M1, M2, M3) are significantly faster than Intel Macs.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Glossary</h2>
+            <p>Don't know what a term means? Here's a quick reference:</p>
+
+            <p><span class="glossary-term">Terminal</span> - An app on your Mac where you type text commands instead of clicking buttons. It's like having a conversation with your computer.</p>
+
+            <p><span class="glossary-term">Python</span> - A programming language. You don't need to learn it - just have it installed so the tool can run.</p>
+
+            <p><span class="glossary-term">pip</span> - A tool that installs Python add-ons (called "packages"). Think of it like an app store for Python tools.</p>
+
+            <p><span class="glossary-term">Ollama</span> - An app that runs AI models on your Mac. It's the "brain" that analyzes and summarizes your videos.</p>
+
+            <p><span class="glossary-term">LLM (Large Language Model)</span> - The type of AI that understands and generates text. ChatGPT is an LLM. Ollama runs one locally on your computer.</p>
+
+            <p><span class="glossary-term">Transcript</span> - The written text of everything said in a video, with timestamps.</p>
+        </section>
+
+        <footer>
+            <p>YouTube Learning Library Setup Guide</p>
+            <p>Questions? Check the troubleshooting section above.</p>
+        </footer>
+    </div>
+
+    <script>
+        function copyCommand(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function toggleCollapsible(header) {
+            const collapsible = header.parentElement;
+            collapsible.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
