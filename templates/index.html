@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}YouTube Learning Library{% endblock %}
+
+{% block content %}
+<!-- Search Bar -->
+<div class="search-container">
+    <input type="text" id="search-input" placeholder="Search videos, transcripts, and more...">
+    <button id="search-btn">Search</button>
+    <button id="clear-search" style="display: none;">Clear</button>
+</div>
+
+<!-- Search Results (hidden by default) -->
+<div id="search-results" class="search-results" style="display: none;"></div>
+
+<!-- Library Content -->
+<div id="library-content">
+<div class="filters">
+    <div class="filter-group">
+        <h3>Topics</h3>
+        <div class="tags">
+            {% for topic in topics %}
+            <a href="topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="filter-group">
+        <h3>Format</h3>
+        <div class="tags">
+            {% for fmt in formats %}
+            <a href="#" class="tag" data-filter="format" data-value="{{ fmt }}">{{ fmt }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="filter-group">
+        <h3>Difficulty</h3>
+        <div class="tags">
+            {% for diff in difficulties %}
+            <a href="#" class="tag" data-filter="difficulty" data-value="{{ diff }}">{{ diff }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if channels %}
+    <div class="filter-group">
+        <h3>Channels</h3>
+        <div class="tags">
+            {% for channel in channels %}
+            <a href="channels/{{ channel.slug }}.html" class="tag">{{ channel.name }}</a>
+            {% endfor %}
+            {% if channels|length >= 10 %}
+            <a href="channels/index.html" class="tag" style="background: var(--accent);">All channels...</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="entries">
+    {% for entry in entries %}
+    <article class="entry-card"
+             data-topics="{{ entry.facets.topics|join(',') }}"
+             data-format="{{ entry.facets.format }}"
+             data-difficulty="{{ entry.facets.difficulty }}">
+        <h2><a href="transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        <div class="entry-meta">
+            <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
+            •
+            <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
+            •
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            •
+            <span class="date">{{ entry.added_date }}</span>
+        </div>
+        {% if entry.summary %}
+        <div class="entry-summary">
+            <ul>
+                {% for point in entry.summary[:3] %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </article>
+    {% endfor %}
+</div>
+
+</div><!-- End library-content -->
+
+<script>
+// Simple client-side filtering
+document.querySelectorAll('.tag[data-filter]').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+        e.preventDefault();
+        const filter = tag.dataset.filter;
+        const value = tag.dataset.value;
+
+        // Toggle active state
+        tag.classList.toggle('active');
+
+        // Get all active filters
+        const activeFilters = {};
+        document.querySelectorAll('.tag.active[data-filter]').forEach(t => {
+            const f = t.dataset.filter;
+            if (!activeFilters[f]) activeFilters[f] = [];
+            activeFilters[f].push(t.dataset.value);
+        });
+
+        // Filter entries
+        document.querySelectorAll('.entry-card').forEach(card => {
+            let show = true;
+
+            for (const [filterName, values] of Object.entries(activeFilters)) {
+                const cardValue = card.dataset[filterName];
+                if (!values.some(v => cardValue.includes(v))) {
+                    show = false;
+                    break;
+                }
+            }
+
+            card.style.display = show ? 'block' : 'none';
+        });
+    });
+});
+
+// Search functionality (works with search_server.py)
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+const clearBtn = document.getElementById('clear-search');
+const searchResults = document.getElementById('search-results');
+const libraryContent = document.getElementById('library-content');
+
+function formatDuration(seconds) {
+    if (!seconds) return '0m';
+    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h}h ${m}m`;
+}
+
+async function performSearch() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    searchResults.innerHTML = '<p style="color: var(--text-muted);">Searching...</p>';
+    searchResults.style.display = 'block';
+    libraryContent.style.display = 'none';
+    clearBtn.style.display = 'inline-block';
+
+    try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`);
+        const data = await response.json();
+
+        if (data.error) {
+            searchResults.innerHTML = `<p style="color: var(--accent);">Error: ${data.error}</p>`;
+            return;
+        }
+
+        if (data.results.length === 0) {
+            searchResults.innerHTML = '<p style="color: var(--text-muted);">No results found. Try different keywords.</p>';
+            return;
+        }
+
+        searchResults.innerHTML = `
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                Found ${data.total} result${data.total !== 1 ? 's' : ''} for "${data.query}"
+            </p>
+            ${data.results.map(r => `
+                <article class="search-result-card">
+                    <h2><a href="transcripts/${r.slug}.html">${r.title_highlighted || r.title}</a></h2>
+                    <div class="entry-meta">
+                        <span class="duration">${r.duration || formatDuration(r.duration_seconds)}</span>
+                        ${r.channel && r.channel.name ? `• <a href="channels/${r.channel.slug}.html" class="channel-link">${r.channel.name}</a>` : ''}
+                        • <span class="topic">${(r.facets.topics || []).join(', ')}</span>
+                        • <span class="difficulty">${r.facets.difficulty || ''}</span>
+                    </div>
+                    ${r.matching_sections && r.matching_sections.length > 0 ? `
+                        <div class="matching-sections">
+                            <strong style="color: var(--text-muted); font-size: 0.85rem;">Matching sections:</strong>
+                            ${r.matching_sections.map(s => `
+                                <div class="matching-section">
+                                    <a href="${s.timestamp_url}" target="_blank">
+                                        <span class="timestamp">${s.timestamp}</span>
+                                        ${s.title}
+                                    </a>
+                                    <p>${s.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </article>
+            `).join('')}
+        `;
+    } catch (err) {
+        // If search server is not running, show message
+        searchResults.innerHTML = `
+            <p style="color: var(--text-muted);">
+                Search requires the search server to be running.<br>
+                Start it with: <code style="background: var(--bg-light); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">python search_server.py</code>
+            </p>
+        `;
+    }
+}
+
+function clearSearch() {
+    searchInput.value = '';
+    searchResults.style.display = 'none';
+    searchResults.innerHTML = '';
+    libraryContent.style.display = 'block';
+    clearBtn.style.display = 'none';
+}
+
+searchBtn.addEventListener('click', performSearch);
+searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performSearch();
+});
+clearBtn.addEventListener('click', clearSearch);
+</script>
+{% endblock %}

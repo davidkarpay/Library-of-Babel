@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Videos Starting with "{{ letter|upper }}" - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<h2 style="margin-bottom: 1rem;">Browse A-Z</h2>
+
+<div class="letter-nav">
+    {% for l in alphabet %}
+    <a href="{{ l }}.html" class="letter-link {% if l == letter %}active{% endif %}">{{ l|upper if l != '0-9' else '#' }}</a>
+    {% endfor %}
+</div>
+
+<h3 style="margin: 1.5rem 0 0.5rem;">{{ letter|upper if letter != '0-9' else 'Numbers & Symbols' }}</h3>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">
+    {{ entries|length }} video{% if entries|length != 1 %}s{% endif %}
+</p>
+
+{% if entries %}
+<div class="entries">
+    {% for entry in entries %}
+    <article class="entry-card">
+        <h2><a href="../transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        <div class="entry-meta">
+            <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
+            •
+            {% if entry.channel and entry.channel.name %}
+            <a href="../channels/{{ entry.channel.slug }}.html" class="channel-link">{{ entry.channel.name }}</a>
+            •
+            {% endif %}
+            <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
+            •
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<p style="color: var(--text-muted);">No videos starting with this letter.</p>
+{% endif %}
+{% endblock %}

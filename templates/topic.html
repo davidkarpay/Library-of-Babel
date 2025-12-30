@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ topic|title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<h2 style="margin-bottom: 1rem;">{{ topic|title }}</h2>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">
+    {{ entries|length }} video{% if entries|length != 1 %}s{% endif %} in this topic
+</p>
+
+<div class="entries">
+    {% for entry in entries %}
+    <article class="entry-card">
+        <h2><a href="../transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        <div class="entry-meta">
+            <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
+            •
+            <span class="format">{{ entry.facets.format }}</span>
+            •
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+        </div>
+        {% if entry.summary %}
+        <div class="entry-summary">
+            <ul>
+                {% for point in entry.summary[:2] %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </article>
+    {% endfor %}
+</div>
+{% endblock %}

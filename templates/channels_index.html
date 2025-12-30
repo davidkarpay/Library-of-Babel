@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Browse by Channel - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_channels %}index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<h2 style="margin-bottom: 0.5rem;">Browse by Channel</h2>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">
+    {{ channels|length }} channel{% if channels|length != 1 %}s{% endif %} in library
+</p>
+
+<div class="channel-list">
+    {% for channel in channels %}
+    <a href="{{ channel.slug }}.html" class="channel-card">
+        <span class="channel-name">{{ channel.name }}</span>
+        <span class="channel-count">{{ channel.count }} video{% if channel.count != 1 %}s{% endif %}</span>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

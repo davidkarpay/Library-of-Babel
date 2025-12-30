@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}YouTube Learning Library{% endblock %}</title>
+    <link rel="stylesheet" href="{% block css_path %}assets/style.css{% endblock %}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><a href="{% block home_path %}index.html{% endblock %}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Learning Library</a></h1>
+            <nav class="main-nav">
+                <a href="{% block nav_home %}index.html{% endblock %}">All Videos</a>
+                <a href="{% block nav_channels %}channels/index.html{% endblock %}">Channels</a>
+                <a href="{% block nav_browse %}browse/a.html{% endblock %}">A-Z</a>
+            </nav>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.85rem;">
+            <p>Generated from YouTube transcripts • {{ entries|length if entries else total_entries if total_entries else 0 }} videos indexed</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<div class="transcript-header">
+    <h2>{{ entry.title }}</h2>
+    <div class="entry-meta" style="margin-top: 0.5rem;">
+        <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
+        •
+        {% if entry.channel and entry.channel.name %}
+        <a href="../channels/{{ entry.channel.slug }}.html" class="channel-link">{{ entry.channel.name }}</a>
+        •
+        {% endif %}
+        {% for topic in entry.facets.topics %}
+        <a href="../topics/{{ topic }}.html" class="tag" style="display: inline;">{{ topic }}</a>
+        {% endfor %}
+        •
+        <span class="format">{{ entry.facets.format }}</span>
+        •
+        <span class="difficulty">{{ entry.facets.difficulty }}</span>
+        •
+        <a href="{{ entry.url }}" target="_blank" style="color: var(--accent);">Watch on YouTube ↗</a>
+    </div>
+</div>
+
+<!-- Video Embed -->
+<div class="video-embed">
+    <iframe
+        src="https://www.youtube.com/embed/{{ entry.id }}"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+    </iframe>
+</div>
+
+<!-- Summary -->
+{% if entry.summary %}
+<div class="summary">
+    <h3>Key Points</h3>
+    <ul>
+        {% for point in entry.summary %}
+        <li>{{ point }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Sections Navigation -->
+{% if entry.sections %}
+<div class="sections-nav">
+    <h3>Sections</h3>
+    <ul>
+        {% for section in entry.sections %}
+        <li>
+            <a href="{{ entry.url }}&t={{ section.start }}s" target="_blank">
+                <span class="timestamp">{{ '%02d:%02d:%02d'|format(section.start // 3600, (section.start % 3600) // 60, section.start % 60) }}</span>
+                <strong>{{ section.title }}</strong>
+                {% if section.description %} - {{ section.description }}{% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Full Transcript -->
+<div class="transcript-content">
+    <h3>Full Transcript</h3>
+    {{ markdown_content | safe }}
+</div>
+
+<script>
+// Make timestamps in transcript clickable
+document.querySelectorAll('.transcript-content .timestamp').forEach(ts => {
+    const text = ts.textContent.trim();
+    const parts = text.split(':').map(Number);
+    let seconds = 0;
+    if (parts.length === 3) {
+        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+        seconds = parts[0] * 60 + parts[1];
+    }
+
+    const link = document.createElement('a');
+    link.href = '{{ entry.url }}&t=' + seconds + 's';
+    link.target = '_blank';
+    link.textContent = text;
+    link.style.color = 'inherit';
+    link.style.textDecoration = 'none';
+
+    ts.textContent = '';
+    ts.appendChild(link);
+});
+</script>
+{% endblock %}

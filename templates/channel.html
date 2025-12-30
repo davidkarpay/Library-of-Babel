@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ channel_name }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_channels %}index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<h2 style="margin-bottom: 0.5rem;">{{ channel_name }}</h2>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">
+    {{ entries|length }} video{% if entries|length != 1 %}s{% endif %} from this channel
+    {% if channel_url %}
+    • <a href="{{ channel_url }}" target="_blank" style="color: var(--accent);">View on YouTube ↗</a>
+    {% endif %}
+</p>
+
+<div class="entries">
+    {% for entry in entries %}
+    <article class="entry-card">
+        <h2><a href="../transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        <div class="entry-meta">
+            <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
+            •
+            <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
+            •
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            •
+            <span class="date">{{ entry.added_date }}</span>
+        </div>
+        {% if entry.summary %}
+        <div class="entry-summary">
+            <ul>
+                {% for point in entry.summary[:2] %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </article>
+    {% endfor %}
+</div>
+{% endblock %}

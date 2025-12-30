@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+env/
+.venv/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Backup files
+*.save
+*.bak
+*.tmp
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# === USER DATA - EXCLUDE ALL ===
+# Generated site
+site/
+
+# User's transcripts and metadata
+transcripts/
+metadata/
+
+# Library index (generated)
+library.json
+
+# Search index (generated)
+search_index/
+
+# Pending imports (user-specific)
+pending.json
+
+# Personal watch history files
+ai_ml_coding_watch_history*.md
+*watch_history*.md
