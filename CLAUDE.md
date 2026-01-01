@@ -47,7 +47,9 @@ When videos fail (no captions available), they are logged to `pending.json`:
 ## Environment Variables
 
 - `OLLAMA_URL` - Ollama server URL (default: `http://localhost:11434`)
-- `OLLAMA_MODEL` - Model for LLM analysis (default: `llama3.1:8b`)
+- `OLLAMA_MODEL` - Model for LLM analysis (default: `gpt-oss:120b-cloud`)
+- `SEARCH_PORT` - Search server port (default: `5000`)
+- `SEARCH_HOST` - Search server host (default: `127.0.0.1`)
 
 ## Architecture
 
@@ -83,6 +85,7 @@ pending.json    → Failed imports awaiting manual processing
 - `backfill_channels.py` - Add channel info to existing metadata
 - `search_server.py` - Flask server with Whoosh full-text search
 - `reprocess_transcripts.py` - Re-fetch and regenerate all existing entries
+- `validate_setup.py` - Check if environment is correctly configured
 
 **LLM Analysis Pipeline** (in `youtube_transcript_to_md.py`):
 - `chunk_into_sections()` groups transcript segments into ~180 second chunks
@@ -96,7 +99,7 @@ pending.json    → Failed imports awaiting manual processing
 {
   "id": "video_id",
   "title": "LLM-generated title",
-  "url": "youtube URL",
+  "url": "https://youtube.com/watch?v=...",
   "channel": {
     "id": "UCxxxx",
     "name": "Channel Name",
@@ -109,9 +112,9 @@ pending.json    → Failed imports awaiting manual processing
     "format": "tutorial",
     "difficulty": "intermediate"
   },
-  "summary": ["bullet1", "bullet2"],
+  "summary": ["Key insight 1", "Key insight 2"],
   "sections": [
-    {"start": 0, "end": 180, "title": "...", "description": "..."}
+    {"start": 0, "end": 180, "title": "Section Title", "description": "One-sentence description"}
   ],
   "added_date": "2025-12-29"
 }

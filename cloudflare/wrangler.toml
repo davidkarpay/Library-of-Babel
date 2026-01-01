@@ -1,0 +1,16 @@
+# Cloudflare Worker Configuration
+# YouTube Learning Library - Secure Ollama Proxy
+
+name = "youtube-library-api"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace for persistent rate limiting
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "5e7dff6987954e278d3a634dcb4a186d"
+
+# Development settings
+[dev]
+port = 8787
+local_protocol = "http"

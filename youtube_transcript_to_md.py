@@ -25,7 +25,7 @@ import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1:8b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gpt-oss:120b-cloud")
 
 BASE_DIR = Path(__file__).parent
 TRANSCRIPTS_DIR = BASE_DIR / "transcripts"
@@ -110,6 +110,14 @@ def fetch_channel_info(video_id: str) -> dict:
 
 def format_timestamp(seconds: float) -> str:
     return time.strftime("%H:%M:%S", time.gmtime(int(seconds)))
+
+
+def format_timestamp_compact(seconds: float) -> str:
+    """Compact timestamp for margin display (0:03 or 1:23:45)."""
+    s = int(seconds)
+    if s < 3600:
+        return f"{s // 60}:{s % 60:02d}"
+    return f"{s // 3600}:{(s % 3600) // 60:02d}:{s % 60:02d}"
 
 
 def ollama_generate(prompt: str, timeout: int = 60) -> str:
@@ -307,24 +315,15 @@ def write_markdown(transcript: list, metadata: dict, output_path: Path):
         f.write("\n")
 
         f.write("## Full Transcript\n\n")
-        current_section_idx = 0
-        sections = metadata.get("sections", [])
-
+        f.write('<div class="transcript-prose">\n')
         for segment in transcript:
-            if current_section_idx < len(sections):
-                section = sections[current_section_idx]
-                if segment["start"] >= section["start"] and current_section_idx == 0:
-                    f.write(f"\n### {section['title']}\n\n")
-                elif current_section_idx > 0 and segment["start"] >= section["start"]:
-                    pass
-                if segment["start"] >= section.get("end", float('inf')):
-                    current_section_idx += 1
-                    if current_section_idx < len(sections):
-                        f.write(f"\n### {sections[current_section_idx]['title']}\n\n")
-
-            ts = format_timestamp(segment["start"])
-            text = segment["text"].replace("\n", " ")
-            f.write(f"<span class=\"timestamp\">{ts}</span> {text}\n\n")
+            seconds = int(segment["start"])
+            ts = format_timestamp_compact(seconds)
+            text = segment["text"].replace("\n", " ").strip()
+            yt_link = f"{metadata['url']}&t={seconds}s"
+            f.write(f'<span class="margin-timestamp"><a href="{yt_link}">{ts}</a></span>')
+            f.write(f'<span class="prose-segment">{text} </span>\n')
+        f.write('</div>\n')
 
 
 def main():

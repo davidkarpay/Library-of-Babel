@@ -54,3 +54,8 @@ pending.json
 # Personal watch history files
 ai_ml_coding_watch_history*.md
 *watch_history*.md
+
+# YouTube API credentials (NEVER commit these)
+credentials.json
+tokens.json
+import_queue.json
