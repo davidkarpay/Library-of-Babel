@@ -163,6 +163,16 @@
   }
 
   /**
+   * Validate slug format (alphanumeric, hyphens, underscores only)
+   * Prevents path traversal and injection
+   */
+  function isValidSlug(slug) {
+    if (!slug || typeof slug !== 'string') return false;
+    // Only allow alphanumeric, hyphens, underscores (no dots, slashes, etc.)
+    return /^[a-zA-Z0-9_-]+$/.test(slug);
+  }
+
+  /**
    * Add recommendation cards
    */
   function addRecommendations(recs) {
@@ -170,14 +180,18 @@
     container.className = 'docent-recommendations';
 
     for (const rec of recs.slice(0, 3)) {
+      // Validate slug to prevent path traversal
+      const slug = rec.slug || rec._filename;
+      if (!isValidSlug(slug)) continue;
+
       const card = document.createElement('a');
       card.className = 'docent-rec-card';
 
-      // Determine link
+      // Determine link (prefix is hardcoded for safety)
       if (rec.content_type === 'paper') {
-        card.href = `papers/${rec.slug || rec._filename}.html`;
+        card.href = `papers/${slug}.html`;
       } else {
-        card.href = `transcripts/${rec.slug || rec._filename}.html`;
+        card.href = `transcripts/${slug}.html`;
       }
 
       const type = rec.content_type === 'paper' ? 'Paper' : 'Video';
@@ -225,13 +239,30 @@
   }
 
   /**
+   * Validate a message object from storage
+   */
+  function isValidMessage(msg) {
+    if (!msg || typeof msg !== 'object') return false;
+    if (typeof msg.text !== 'string') return false;
+    if (msg.role !== 'user' && msg.role !== 'docent') return false;
+    return true;
+  }
+
+  /**
    * Load chat history from sessionStorage
    */
   function loadHistory() {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
       if (saved) {
-        messages = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Validate parsed data is an array
+        if (!Array.isArray(parsed)) {
+          sessionStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+        // Filter to only valid messages
+        messages = parsed.filter(isValidMessage);
         for (const msg of messages) {
           const msgEl = document.createElement('div');
           msgEl.className = `docent-message docent-${msg.role}`;
@@ -240,7 +271,8 @@
         }
       }
     } catch (e) {
-      // Storage unavailable
+      // Storage unavailable or corrupted - clear it
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch (_) {}
     }
   }
 

@@ -28,14 +28,63 @@ let libraryCache = {
   fetchedAt: 0
 };
 
+// Rate limiting configuration
+const RATE_LIMIT = {
+  PER_IP_PER_MINUTE: 30,      // 30 requests per IP per minute (more lenient for chat)
+  WINDOW_SECONDS: 60
+};
+
 /**
  * Security headers for all responses
  */
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin'
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
 };
+
+/**
+ * In-memory rate limit tracking (per-isolate, resets on cold start)
+ * For production use with multiple isolates, use Cloudflare KV
+ */
+const rateLimitCache = new Map();
+
+/**
+ * Check rate limit for an IP address
+ */
+function checkRateLimit(ip) {
+  const now = Math.floor(Date.now() / 1000);
+  const windowKey = Math.floor(now / RATE_LIMIT.WINDOW_SECONDS);
+  const key = `${ip}:${windowKey}`;
+
+  // Clean old entries (different window)
+  for (const [k] of rateLimitCache) {
+    if (!k.endsWith(`:${windowKey}`)) {
+      rateLimitCache.delete(k);
+    }
+  }
+
+  const count = rateLimitCache.get(key) || 0;
+  if (count >= RATE_LIMIT.PER_IP_PER_MINUTE) {
+    return {
+      allowed: false,
+      retryAfter: RATE_LIMIT.WINDOW_SECONDS - (now % RATE_LIMIT.WINDOW_SECONDS)
+    };
+  }
+
+  rateLimitCache.set(key, count + 1);
+  return { allowed: true, remaining: RATE_LIMIT.PER_IP_PER_MINUTE - count - 1 };
+}
+
+/**
+ * Get client IP from Cloudflare headers
+ */
+function getClientIP(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
+}
 
 /**
  * Fetch and cache library.json
@@ -353,9 +402,17 @@ export default {
           'Access-Control-Allow-Origin': origin,
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
-          'Access-Control-Max-Age': '86400'
+          'Access-Control-Max-Age': '86400',
+          ...SECURITY_HEADERS
         }
       });
+    }
+
+    // Check rate limit
+    const clientIP = getClientIP(request);
+    const rateCheck = checkRateLimit(clientIP);
+    if (!rateCheck.allowed) {
+      return errorResponse('Rate limit exceeded. Please wait.', 429, origin);
     }
 
     // Fetch library data

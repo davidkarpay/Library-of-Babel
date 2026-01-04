@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://youtube-library-docent.dlkarpay.workers.dev; frame-ancestors 'none';">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>{% block title %}YouTube Learning Library{% endblock %}</title>
     <link rel="stylesheet" href="{% block css_path %}assets/style.css{% endblock %}">
     <link rel="stylesheet" href="{% block docent_css %}docent-widget.css{% endblock %}">
