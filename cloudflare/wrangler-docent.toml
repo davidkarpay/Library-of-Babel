@@ -14,6 +14,11 @@ LIBRARY_URL = "https://library.davidkarpay.com/library.json"
 port = 8788
 local_protocol = "http"
 
+# KV namespace for rate limiting
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "5e7dff6987954e278d3a634dcb4a186d"
+
 # Optional: Add KV namespace for caching library.json
 # Uncomment and run: wrangler kv namespace create LIBRARY_CACHE
 # [[kv_namespaces]]

@@ -47,36 +47,34 @@ const SECURITY_HEADERS = {
 };
 
 /**
- * In-memory rate limit tracking (per-isolate, resets on cold start)
- * For production use with multiple isolates, use Cloudflare KV
+ * Check rate limit using Cloudflare KV for distributed persistence
  */
-const rateLimitCache = new Map();
-
-/**
- * Check rate limit for an IP address
- */
-function checkRateLimit(ip) {
+async function checkRateLimit(ip, env) {
   const now = Math.floor(Date.now() / 1000);
   const windowKey = Math.floor(now / RATE_LIMIT.WINDOW_SECONDS);
-  const key = `${ip}:${windowKey}`;
+  const key = `docent:${ip}:${windowKey}`;
 
-  // Clean old entries (different window)
-  for (const [k] of rateLimitCache) {
-    if (!k.endsWith(`:${windowKey}`)) {
-      rateLimitCache.delete(k);
+  try {
+    const count = parseInt(await env.RATE_LIMIT.get(key)) || 0;
+
+    if (count >= RATE_LIMIT.PER_IP_PER_MINUTE) {
+      return {
+        allowed: false,
+        retryAfter: RATE_LIMIT.WINDOW_SECONDS - (now % RATE_LIMIT.WINDOW_SECONDS)
+      };
     }
-  }
 
-  const count = rateLimitCache.get(key) || 0;
-  if (count >= RATE_LIMIT.PER_IP_PER_MINUTE) {
-    return {
-      allowed: false,
-      retryAfter: RATE_LIMIT.WINDOW_SECONDS - (now % RATE_LIMIT.WINDOW_SECONDS)
-    };
-  }
+    // Increment counter with TTL
+    await env.RATE_LIMIT.put(key, String(count + 1), {
+      expirationTtl: RATE_LIMIT.WINDOW_SECONDS * 2
+    });
 
-  rateLimitCache.set(key, count + 1);
-  return { allowed: true, remaining: RATE_LIMIT.PER_IP_PER_MINUTE - count - 1 };
+    return { allowed: true, remaining: RATE_LIMIT.PER_IP_PER_MINUTE - count - 1 };
+  } catch (error) {
+    // If KV fails, allow request but log error
+    console.error('Rate limit check failed:', error);
+    return { allowed: true, remaining: -1 };
+  }
 }
 
 /**
@@ -410,7 +408,7 @@ export default {
 
     // Check rate limit
     const clientIP = getClientIP(request);
-    const rateCheck = checkRateLimit(clientIP);
+    const rateCheck = await checkRateLimit(clientIP, env);
     if (!rateCheck.allowed) {
       return errorResponse('Rate limit exceeded. Please wait.', 429, origin);
     }
