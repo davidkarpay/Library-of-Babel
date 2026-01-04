@@ -1,0 +1,84 @@
+name: Daily Paper Sync
+
+on:
+  schedule:
+    # Run at 2 PM UTC daily (after HuggingFace daily papers are published)
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Specific date to sync (YYYY-MM-DD)'
+        required: false
+      backfill_days:
+        description: 'Number of days to backfill'
+        required: false
+        default: '0'
+      min_upvotes:
+        description: 'Minimum upvotes filter'
+        required: false
+        default: '10'
+
+jobs:
+  sync-papers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run paper sync
+        env:
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            python sync_daily.py --date "${{ github.event.inputs.date }}" --min-upvotes ${{ github.event.inputs.min_upvotes || '10' }}
+          elif [ "${{ github.event.inputs.backfill_days }}" != "0" ]; then
+            python sync_daily.py --backfill ${{ github.event.inputs.backfill_days }} --min-upvotes ${{ github.event.inputs.min_upvotes || '10' }}
+          else
+            python sync_daily.py --min-upvotes 10
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name 'GitHub Actions Bot'
+          git config user.email 'actions@github.com'
+
+      - name: Commit and push changes
+        run: |
+          git add metadata/ papers/ site/ library.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Daily paper sync: $(date +%Y-%m-%d)
+
+            Automated import from HuggingFace daily papers.
+
+            🤖 Generated with GitHub Actions"
+            git push
+          fi
+
+      - name: Deploy to Cloudflare Pages (optional)
+        if: success()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            npm install -g wrangler
+            wrangler pages deploy site --project-name=youtube-library --commit-dirty=true
+          else
+            echo "Skipping Cloudflare deployment (no API token configured)"
+          fi

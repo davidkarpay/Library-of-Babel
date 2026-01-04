@@ -1,0 +1,287 @@
+/**
+ * Learning Library Docent Widget Styles
+ */
+
+/* Widget Container */
+#docent-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Floating Button */
+#docent-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  color: white;
+}
+
+#docent-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+#docent-button.docent-active {
+  transform: scale(0.95);
+}
+
+/* Chat Window */
+#docent-chat {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  height: 480px;
+  max-height: calc(100vh - 120px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#docent-chat.docent-hidden {
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  pointer-events: none;
+}
+
+/* Header */
+.docent-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.docent-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.docent-close:hover {
+  opacity: 1;
+}
+
+/* Messages Container */
+.docent-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8f9fa;
+}
+
+/* Individual Messages */
+.docent-message {
+  padding: 12px 16px;
+  border-radius: 16px;
+  max-width: 85%;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.docent-user {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.docent-docent {
+  background: white;
+  color: #333;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Recommendation Cards */
+.docent-recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.docent-rec-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.docent-rec-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transform: translateX(2px);
+}
+
+.docent-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.video-badge {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.paper-badge {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.docent-rec-title {
+  font-size: 13px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Input Area */
+.docent-input-area {
+  display: flex;
+  padding: 12px;
+  gap: 8px;
+  background: white;
+  border-top: 1px solid #eee;
+}
+
+.docent-input-area input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.docent-input-area input:focus {
+  border-color: #667eea;
+}
+
+.docent-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform 0.2s;
+}
+
+.docent-send:hover {
+  transform: scale(1.05);
+}
+
+.docent-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 480px) {
+  #docent-widget {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  #docent-button {
+    width: 48px;
+    height: 48px;
+  }
+
+  #docent-chat {
+    bottom: 60px;
+    width: calc(100vw - 20px);
+    height: calc(100vh - 80px);
+    border-radius: 12px;
+  }
+
+  .docent-message {
+    max-width: 90%;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  #docent-chat {
+    background: #1a1a1a;
+  }
+
+  .docent-messages {
+    background: #111;
+  }
+
+  .docent-docent {
+    background: #2a2a2a;
+    color: #eee;
+  }
+
+  .docent-rec-card {
+    background: #2a2a2a;
+    color: #eee;
+  }
+
+  .docent-rec-title {
+    color: #eee;
+  }
+
+  .docent-input-area {
+    background: #1a1a1a;
+    border-top-color: #333;
+  }
+
+  .docent-input-area input {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #eee;
+  }
+
+  .docent-input-area input:focus {
+    border-color: #667eea;
+  }
+}

@@ -22,6 +22,7 @@ from jinja2 import Environment, FileSystemLoader
 BASE_DIR = Path(__file__).parent
 METADATA_DIR = BASE_DIR / "metadata"
 TRANSCRIPTS_DIR = BASE_DIR / "transcripts"
+PAPERS_DIR = BASE_DIR / "papers"
 TEMPLATES_DIR = BASE_DIR / "templates"
 SITE_DIR = BASE_DIR / "site"
 
@@ -90,8 +91,27 @@ def build_alpha_index(entries: list) -> dict:
     return alpha
 
 
-def format_duration(seconds: int) -> str:
+def build_content_type_index(entries: list) -> dict:
+    """Build index of entries by content type (video/paper)."""
+    index = {"video": [], "paper": []}
+    for entry in entries:
+        content_type = entry.get("content_type", "video")
+        if content_type in index:
+            index[content_type].append(entry)
+        else:
+            index["video"].append(entry)  # Default to video
+    return index
+
+
+def format_duration(seconds) -> str:
     """Format seconds as human-readable duration."""
+    if seconds is None:
+        return ""
+    try:
+        seconds = int(seconds)
+    except (ValueError, TypeError):
+        return ""
+
     if seconds < 60:
         return f"{seconds}s"
     elif seconds < 3600:
@@ -117,6 +137,11 @@ def generate_site():
     facet_index = build_facet_index(entries)
     channel_index = build_channel_index(entries)
     alpha_index = build_alpha_index(entries)
+    content_type_index = build_content_type_index(entries)
+
+    video_count = len(content_type_index["video"])
+    paper_count = len(content_type_index["paper"])
+    print(f"  Videos: {video_count}, Papers: {paper_count}")
 
     # Set up Jinja environment
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
@@ -128,6 +153,7 @@ def generate_site():
     SITE_DIR.mkdir()
     (SITE_DIR / "topics").mkdir()
     (SITE_DIR / "transcripts").mkdir()
+    (SITE_DIR / "papers").mkdir()
     (SITE_DIR / "channels").mkdir()
     (SITE_DIR / "browse").mkdir()
     (SITE_DIR / "assets").mkdir()
@@ -154,7 +180,9 @@ def generate_site():
         topics=sorted(facet_index["topics"].keys()),
         formats=sorted(facet_index["format"].keys()),
         difficulties=["beginner", "intermediate", "advanced"],
-        channels=channels_list[:10]
+        channels=channels_list[:10],
+        video_count=video_count,
+        paper_count=paper_count
     )
     (SITE_DIR / "index.html").write_text(index_html)
 
@@ -216,10 +244,10 @@ def generate_site():
     except Exception as e:
         print(f"  Warning: Could not generate A-Z pages: {e}")
 
-    # Generate transcript pages
+    # Generate transcript pages (videos only)
     print("Generating transcript pages...")
     transcript_template = env.get_template("transcript.html")
-    for entry in entries:
+    for entry in content_type_index["video"]:
         # Read the markdown content
         md_file = TRANSCRIPTS_DIR / f"{entry['_filename']}.md"
         if md_file.exists():
@@ -229,13 +257,70 @@ def generate_site():
 
         transcript_html = transcript_template.render(
             entry=entry,
-            markdown_content=md_content
+            markdown_content=md_content,
+            video_count=video_count,
+            paper_count=paper_count
         )
         (SITE_DIR / "transcripts" / f"{entry['_filename']}.html").write_text(transcript_html)
+
+    # Generate paper pages
+    if paper_count > 0:
+        print("Generating paper pages...")
+        try:
+            paper_template = env.get_template("paper.html")
+            for entry in content_type_index["paper"]:
+                # Add slug for linking
+                entry["slug"] = entry["_filename"]
+
+                # Read the markdown content
+                md_file = PAPERS_DIR / f"{entry['_filename']}.md"
+                if md_file.exists():
+                    md_content = md_file.read_text()
+                else:
+                    md_content = ""
+
+                paper_html = paper_template.render(
+                    entry=entry,
+                    markdown_content=md_content,
+                    video_count=video_count,
+                    paper_count=paper_count
+                )
+                (SITE_DIR / "papers" / f"{entry['_filename']}.html").write_text(paper_html)
+
+            # Generate papers index page
+            print("Generating papers index...")
+            papers_index_template = env.get_template("papers_index.html")
+
+            # Get paper-specific topics
+            paper_topics = set()
+            for entry in content_type_index["paper"]:
+                for topic in entry.get("facets", {}).get("topics", []):
+                    paper_topics.add(topic)
+
+            # Add slug to each paper entry
+            papers_with_slugs = []
+            for entry in content_type_index["paper"]:
+                entry["slug"] = entry["_filename"]
+                papers_with_slugs.append(entry)
+
+            papers_index_html = papers_index_template.render(
+                entries=papers_with_slugs,
+                topics=sorted(paper_topics),
+                video_count=video_count,
+                paper_count=paper_count
+            )
+            (SITE_DIR / "papers" / "index.html").write_text(papers_index_html)
+
+        except Exception as e:
+            print(f"  Warning: Could not generate paper pages: {e}")
 
     # Copy CSS
     print("Writing CSS...")
     write_css()
+
+    # Copy docent widget files
+    print("Copying docent widget...")
+    copy_widget_files()
 
     # Write library.json
     print("Writing library.json...")
@@ -247,7 +332,9 @@ def generate_site():
             "difficulties": list(facet_index["difficulty"].keys())
         },
         "channels": [{"slug": c["slug"], "name": c["name"], "count": c["count"]} for c in channels_list],
-        "total": len(entries)
+        "total": len(entries),
+        "video_count": video_count,
+        "paper_count": paper_count
     }
     with open(SITE_DIR / "library.json", "w") as f:
         json.dump(library_data, f, indent=2)
@@ -1130,6 +1217,147 @@ header a {
     color: var(--accent);
 }
 
+/* Paper-specific styles */
+.content-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+}
+
+.paper-badge {
+    background: #6366f1;
+    color: white;
+}
+
+.video-badge {
+    background: #ef4444;
+    color: white;
+}
+
+.paper-header {
+    margin-bottom: 2rem;
+}
+
+.paper-meta .authors {
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.paper-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.upvotes {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.abstract {
+    background: var(--bg-light);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    border-left: 3px solid #6366f1;
+}
+
+.abstract h3 {
+    color: #6366f1;
+    margin-bottom: 1rem;
+}
+
+.abstract p {
+    line-height: 1.7;
+}
+
+.paper-content {
+    background: var(--bg-light);
+    padding: 2rem;
+    border-radius: 0.5rem;
+}
+
+.paper-content h3 {
+    color: #6366f1;
+    margin-bottom: 1rem;
+}
+
+.papers-list .entry-card {
+    border-left: 3px solid #6366f1;
+}
+
+.entry-list {
+    list-style: none;
+}
+
+.entry-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+}
+
+.entry-card:hover {
+    border-color: var(--accent);
+}
+
+.entry-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.entry-title {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.entry-title:hover {
+    color: var(--accent);
+}
+
+.entry-summary {
+    margin-top: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.tag-small {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+}
+
+.empty-state code {
+    background: var(--bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}
+
 .chat-input-container {
     display: flex;
     gap: 0.5rem;
@@ -1184,6 +1412,24 @@ header a {
 }
 '''
     (SITE_DIR / "assets" / "style.css").write_text(css)
+
+
+def copy_widget_files():
+    """Copy docent widget files to site directory."""
+    widget_js = BASE_DIR / "docent-widget.js"
+    widget_css = BASE_DIR / "docent-widget.css"
+
+    if widget_js.exists():
+        shutil.copy(widget_js, SITE_DIR / "docent-widget.js")
+        print("  Copied docent-widget.js")
+    else:
+        print("  Warning: docent-widget.js not found")
+
+    if widget_css.exists():
+        shutil.copy(widget_css, SITE_DIR / "docent-widget.css")
+        print("  Copied docent-widget.css")
+    else:
+        print("  Warning: docent-widget.css not found")
 
 
 if __name__ == "__main__":

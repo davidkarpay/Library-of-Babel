@@ -95,14 +95,26 @@
 
 <div class="entries">
     {% for entry in entries %}
-    <article class="entry-card"
+    <article class="entry-card {% if entry.content_type == 'paper' %}paper-card{% endif %}"
              data-topics="{{ entry.facets.topics|join(',') }}"
              data-format="{{ entry.facets.format }}"
-             data-difficulty="{{ entry.facets.difficulty }}">
+             data-difficulty="{{ entry.facets.difficulty }}"
+             data-type="{{ entry.content_type|default('video') }}">
+        {% if entry.content_type == 'paper' %}
+        <span class="content-type-badge paper-badge">Paper</span>
+        <h2><a href="papers/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        {% else %}
         <h2><a href="transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        {% endif %}
         <div class="entry-meta">
+            {% if entry.duration_seconds %}
             <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
             •
+            {% endif %}
+            {% if entry.upvotes %}
+            <span class="upvotes">▲ {{ entry.upvotes }}</span>
+            •
+            {% endif %}
             <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
             •
             <span class="difficulty">{{ entry.facets.difficulty }}</span>

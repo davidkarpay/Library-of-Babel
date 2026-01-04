@@ -1,0 +1,26 @@
+# Cloudflare Worker - Learning Library Docent API
+# Deploy with: wrangler deploy -c wrangler-docent.toml
+
+name = "youtube-library-docent"
+main = "docent-worker.js"
+compatibility_date = "2024-01-01"
+
+# Environment variables (non-secret)
+[vars]
+LIBRARY_URL = "https://library.davidkarpay.com/library.json"
+
+# Development settings
+[dev]
+port = 8788
+local_protocol = "http"
+
+# Optional: Add KV namespace for caching library.json
+# Uncomment and run: wrangler kv namespace create LIBRARY_CACHE
+# [[kv_namespaces]]
+# binding = "LIBRARY_CACHE"
+# id = "<your-kv-namespace-id>"
+
+# Optional: Add secrets for LLM synthesis
+# Run: wrangler secret put OLLAMA_API_KEY -c wrangler-docent.toml
+# [vars]
+# OLLAMA_WORKER_URL = "https://youtube-library-api.dlkarpay.workers.dev"

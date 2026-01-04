@@ -59,3 +59,7 @@ ai_ml_coding_watch_history*.md
 credentials.json
 tokens.json
 import_queue.json
+
+# Paper PDF cache (temporary downloads)
+papers_cache/
+*.pdf

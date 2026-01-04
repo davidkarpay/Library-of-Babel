@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../papers/index.html" class="back-link">← Back to Papers</a>
+
+<div class="paper-header">
+    <div class="content-type-badge paper-badge">Research Paper</div>
+    <h2>{{ entry.title }}</h2>
+
+    <div class="paper-meta" style="margin-top: 0.5rem;">
+        {% if entry.authors %}
+        <div class="authors">
+            <strong>Authors:</strong> {{ entry.authors[:5]|join(', ') }}{% if entry.authors|length > 5 %}...{% endif %}
+        </div>
+        {% endif %}
+
+        <div class="paper-links" style="margin-top: 0.5rem;">
+            {% for topic in entry.facets.topics %}
+            <a href="../topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+            {% endfor %}
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            {% if entry.upvotes %}
+            <span class="upvotes" title="HuggingFace upvotes">▲ {{ entry.upvotes }}</span>
+            {% endif %}
+            •
+            <a href="{{ entry.arxiv_url }}" target="_blank" style="color: var(--accent);">arXiv ↗</a>
+            •
+            <a href="{{ entry.huggingface_url }}" target="_blank" style="color: var(--accent);">HuggingFace ↗</a>
+        </div>
+
+        {% if entry.organization %}
+        <div class="organization" style="margin-top: 0.25rem; color: var(--text-muted);">
+            <strong>Organization:</strong> {{ entry.organization }}
+        </div>
+        {% endif %}
+
+        <div class="dates" style="margin-top: 0.25rem; color: var(--text-muted);">
+            Published: {{ entry.published_date }} • Added: {{ entry.added_date }}
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+{% if entry.summary %}
+<div class="summary">
+    <h3>Key Insights</h3>
+    <ul>
+        {% for point in entry.summary %}
+        <li>{{ point }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Abstract -->
+{% if entry.abstract %}
+<div class="abstract">
+    <h3>Abstract</h3>
+    <p>{{ entry.abstract }}</p>
+</div>
+{% endif %}
+
+<!-- Sections (for full-text papers) -->
+{% if entry.sections %}
+<div class="sections-nav">
+    <h3>Key Sections</h3>
+    <ul>
+        {% for section in entry.sections %}
+        <li>
+            <strong>{{ section.title }}</strong>
+            {% if section.description %} - {{ section.description }}{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Full Paper Content (if available) -->
+{% if markdown_content %}
+<div class="paper-content">
+    <h3>Full Analysis</h3>
+    {{ markdown_content | safe }}
+</div>
+{% endif %}
+
+{% endblock %}

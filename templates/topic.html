@@ -12,16 +12,27 @@
 
 <h2 style="margin-bottom: 1rem;">{{ topic|title }}</h2>
 <p style="color: var(--text-muted); margin-bottom: 2rem;">
-    {{ entries|length }} video{% if entries|length != 1 %}s{% endif %} in this topic
+    {{ entries|length }} item{% if entries|length != 1 %}s{% endif %} in this topic
 </p>
 
 <div class="entries">
     {% for entry in entries %}
-    <article class="entry-card">
+    <article class="entry-card {% if entry.content_type == 'paper' %}paper-card{% endif %}">
+        {% if entry.content_type == 'paper' %}
+        <span class="content-type-badge paper-badge">Paper</span>
+        <h2><a href="../papers/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        {% else %}
         <h2><a href="../transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+        {% endif %}
         <div class="entry-meta">
+            {% if entry.duration_seconds %}
             <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
             •
+            {% endif %}
+            {% if entry.upvotes %}
+            <span class="upvotes">▲ {{ entry.upvotes }}</span>
+            •
+            {% endif %}
             <span class="format">{{ entry.facets.format }}</span>
             •
             <span class="difficulty">{{ entry.facets.difficulty }}</span>

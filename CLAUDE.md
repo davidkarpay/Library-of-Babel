@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A personal YouTube learning library that fetches transcripts, generates LLM-analyzed metadata (sections, summaries, facets), and builds a static HTML site for browsing.
+A personal learning library that combines YouTube video transcripts and HuggingFace research papers. Content is analyzed by LLM to generate metadata (sections, summaries, topics, difficulty levels) and served via a static HTML site with AI-powered search.
 
 ## Commands
 
@@ -34,6 +34,29 @@ python backfill_channels.py
 # Start the search server (enables full-text search)
 python search_server.py
 python search_server.py --rebuild-index  # Rebuild search index
+
+# === PAPER IMPORT ===
+
+# Import papers from HuggingFace daily papers
+python huggingface_papers.py                        # Import today's papers
+python huggingface_papers.py --date 2026-01-02      # Specific date
+python huggingface_papers.py --limit 10             # Limit number
+python huggingface_papers.py --min-upvotes 20       # Filter by upvotes
+python huggingface_papers.py --dry-run              # Preview only
+
+# Automated daily sync (papers)
+python sync_daily.py                    # Sync today's papers
+python sync_daily.py --backfill 7       # Sync last 7 days
+python sync_daily.py --commit           # Commit changes after sync
+
+# === AGENT INTEGRATION ===
+
+# Start MCP docent server (for Claude integration)
+python mcp_docent_server.py
+
+# Import from YouTube history (liked videos)
+python youtube_history.py               # Interactive review
+python youtube_history.py --auto-add    # Auto-add all relevant
 ```
 
 ## Failed Transcript Workflow
@@ -62,11 +85,13 @@ When videos fail (no captions available), they are logged to `pending.json`:
 
 **Directory Structure:**
 ```
-transcripts/    → Markdown files with full timestamped transcripts
-metadata/       → JSON files with structured data (one per video)
-templates/      → Jinja2 templates (base, index, topic, channel, letter, transcript)
+transcripts/    → Markdown files with full timestamped video transcripts
+papers/         → Markdown files with paper analysis and excerpts
+metadata/       → JSON files with structured data (videos and papers)
+templates/      → Jinja2 templates (base, index, topic, channel, letter, transcript, paper)
 site/           → Generated static site
   ├── index.html, library.json
+  ├── papers/       → Research paper pages
   ├── topics/       → Topic filter pages
   ├── channels/     → Channel browse pages
   ├── browse/       → A-Z alphabetical pages
@@ -74,18 +99,21 @@ site/           → Generated static site
 search_index/   → Whoosh full-text search index (created by search_server.py)
 library.json    → Root copy of master index for external tool access
 pending.json    → Failed imports awaiting manual processing
+papers_cache/   → Cached PDF downloads from arXiv (gitignored)
 ```
 
 **Key Files:**
-- `youtube_transcript_to_md.py` - Main ingestion script with LLM analysis
+- `youtube_transcript_to_md.py` - Main video ingestion script with LLM analysis
+- `huggingface_papers.py` - Paper ingestion from HuggingFace daily papers
 - `library.py` - Static site generator (Jinja2 templates, CSS embedded)
 - `batch_import.py` - Batch URL extraction and import with failure logging
 - `channel_import.py` - Import all videos from a YouTube channel
 - `manual_import.py` - Interactive import for videos without auto-captions
-- `backfill_channels.py` - Add channel info to existing metadata
+- `youtube_history.py` - Import from YouTube liked videos via API
+- `sync_daily.py` - Automated daily paper sync
+- `mcp_docent_server.py` - MCP server for Claude agent integration
 - `search_server.py` - Flask server with Whoosh full-text search
-- `reprocess_transcripts.py` - Re-fetch and regenerate all existing entries
-- `validate_setup.py` - Check if environment is correctly configured
+- `AGENT_GUIDE.md` - Documentation for AI agents using the library
 
 **LLM Analysis Pipeline** (in `youtube_transcript_to_md.py`):
 - `chunk_into_sections()` groups transcript segments into ~180 second chunks

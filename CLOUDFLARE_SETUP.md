@@ -194,3 +194,71 @@ wrangler tail
 ### Chat works locally but not on Cloudflare
 - Ensure Worker routes are configured correctly
 - Check that /api/* routes go to the Worker, not Pages
+
+---
+
+## Part 4: Deploy the Docent API Worker (Optional)
+
+The Docent Worker provides an AI-powered library guide with search, recommendations, and chat.
+
+### What it Does
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Docent Worker (youtube-library-docent.workers.dev)            │
+│  ├── GET  /api/search?q=...&topic=...&type=...                 │
+│  ├── GET  /api/recommend?topic=...&level=...                   │
+│  ├── GET  /api/learning-path?goal=...                          │
+│  ├── GET  /api/whats-new?days=...&type=...                     │
+│  ├── GET  /api/content/:id                                     │
+│  ├── GET  /api/stats                                           │
+│  ├── GET  /api/facets                                          │
+│  └── POST /api/chat                                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Deploy the Docent Worker
+
+```bash
+cd cloudflare
+
+# Deploy the docent worker (separate from main worker)
+wrangler deploy -c wrangler-docent.toml
+```
+
+### Test the Docent API
+
+```bash
+# Search for content
+curl "https://youtube-library-docent.<subdomain>.workers.dev/api/search?q=transformers"
+
+# Get recommendations
+curl "https://youtube-library-docent.<subdomain>.workers.dev/api/recommend?topic=ai-ml&level=beginner"
+
+# Get learning path
+curl "https://youtube-library-docent.<subdomain>.workers.dev/api/learning-path?goal=learn+kubernetes"
+
+# What's new
+curl "https://youtube-library-docent.<subdomain>.workers.dev/api/whats-new?days=7"
+
+# Chat with docent
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://library.davidkarpay.com" \
+  -d '{"message":"Help me learn about security"}' \
+  "https://youtube-library-docent.<subdomain>.workers.dev/api/chat"
+```
+
+### Chat Widget
+
+The site includes a floating chat widget (bottom-right corner) that connects to the Docent API.
+
+To update the widget's API endpoint, edit `docent-widget.js`:
+```javascript
+const API_BASE = 'https://youtube-library-docent.<subdomain>.workers.dev';
+```
+
+Then regenerate the site:
+```bash
+python library.py
+```

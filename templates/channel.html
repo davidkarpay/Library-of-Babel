@@ -23,8 +23,10 @@
     <article class="entry-card">
         <h2><a href="../transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
         <div class="entry-meta">
+            {% if entry.duration_seconds %}
             <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
             •
+            {% endif %}
             <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
             •
             <span class="difficulty">{{ entry.facets.difficulty }}</span>
