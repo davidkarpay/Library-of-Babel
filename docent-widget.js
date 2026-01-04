@@ -153,7 +153,11 @@
     msgEl.className = `docent-message docent-${role}`;
     msgEl.innerHTML = formatMessage(text);
     messagesContainer.appendChild(msgEl);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Only auto-scroll for user messages, not bot responses
+    if (role === 'user') {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
     saveHistory();
   }
@@ -188,7 +192,6 @@
     }
 
     messagesContainer.appendChild(container);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
   /**
