@@ -79,31 +79,8 @@ jobs:
           echo "Running: $CMD"
           eval $CMD
 
-      - name: Configure git
-        run: |
-          git config user.name 'GitHub Actions Bot'
-          git config user.email 'actions@github.com'
-
-      - name: Commit and push changes
-        run: |
-          # Only add files if they exist
-          for path in metadata papers site library.json; do
-            if [ -e "$path" ]; then
-              git add "$path"
-            fi
-          done
-
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            SOURCES="${{ github.event.inputs.sources || 'huggingface arxiv' }}"
-            git commit -m "Daily paper sync: $(date +%Y-%m-%d)
-
-            Sources: $SOURCES
-
-            🤖 Generated with GitHub Actions"
-            git push
-          fi
+      # Note: All content (metadata/, papers/, site/, library.json) is gitignored
+      # The workflow syncs papers and deploys to Cloudflare without committing to git
 
       - name: Deploy to Cloudflare Pages (optional)
         if: success()
