@@ -34,17 +34,26 @@ from typing import Optional
 class LLMClient:
     """Unified LLM client for local and cloud Ollama."""
 
-    def __init__(self, url: str = None, model: str = None):
+    def __init__(self, url: str = None, model: str = None, api_key: str = None):
         """
         Initialize the LLM client.
 
         Args:
             url: Ollama server URL (overrides OLLAMA_URL env var)
             model: Model name (overrides OLLAMA_MODEL env var)
+            api_key: Backend API key for authenticated requests (overrides OLLAMA_API_KEY env var)
         """
         self.url = url or os.environ.get("OLLAMA_URL", "http://localhost:11434")
         self.model = model or os.environ.get("OLLAMA_MODEL", "gpt-oss:120b-cloud")
         self.timeout = int(os.environ.get("OLLAMA_TIMEOUT", "120"))
+        self.api_key = api_key or os.environ.get("OLLAMA_API_KEY", "")
+
+    def _get_headers(self) -> dict:
+        """Get request headers including authentication if configured."""
+        headers = {'Content-Type': 'application/json'}
+        if self.api_key:
+            headers['X-Backend-Key'] = self.api_key
+        return headers
 
     def generate(self, prompt: str, system: str = None, timeout: int = None) -> str:
         """
@@ -70,6 +79,7 @@ class LLMClient:
 
             response = requests.post(
                 f"{self.url}/api/generate",
+                headers=self._get_headers(),
                 json=payload,
                 timeout=timeout or self.timeout
             )
@@ -108,6 +118,7 @@ class LLMClient:
 
             response = requests.post(
                 f"{self.url}/api/chat",
+                headers=self._get_headers(),
                 json={
                     "model": self.model,
                     "messages": chat_messages,
@@ -131,7 +142,11 @@ class LLMClient:
     def is_available(self) -> bool:
         """Check if the Ollama server is reachable."""
         try:
-            response = requests.get(f"{self.url}/api/tags", timeout=5)
+            response = requests.get(
+                f"{self.url}/api/tags",
+                headers=self._get_headers(),
+                timeout=5
+            )
             return response.status_code == 200
         except:
             return False

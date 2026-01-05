@@ -37,6 +37,9 @@ const RATE_LIMIT = {
 // Max request body size (10KB)
 const MAX_BODY_SIZE = 10 * 1024;
 
+// Header for backend authentication (GitHub Actions, etc.)
+const BACKEND_AUTH_HEADER = 'X-Backend-Key';
+
 /**
  * Security headers for all responses
  */
@@ -131,14 +134,30 @@ function errorResponse(message, status, origin, retryAfter = null) {
   return secureResponse({ error: message }, status, origin, headers);
 }
 
+/**
+ * Check if request is from authenticated backend (GitHub Actions, etc.)
+ */
+function isAuthenticatedBackend(request, env) {
+  const backendKey = request.headers.get(BACKEND_AUTH_HEADER);
+  return backendKey && env.BACKEND_API_KEY && backendKey === env.BACKEND_API_KEY;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin') || '';
+    const isBackend = isAuthenticatedBackend(request, env);
 
     // Only handle /api/* routes
     if (!url.pathname.startsWith('/api/')) {
       return new Response('Not found', { status: 404 });
+    }
+
+    // Handle /api/tags - health check endpoint (no auth required for GET)
+    if (url.pathname === '/api/tags' && request.method === 'GET') {
+      return secureResponse({
+        models: [{ name: MODEL, size: 0, digest: '', modified_at: '' }]
+      }, 200, origin || null);
     }
 
     // Handle CORS preflight
@@ -150,16 +169,17 @@ export default {
         status: 204,
         headers: {
           'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, X-Backend-Key',
           'Access-Control-Max-Age': '86400',
           ...SECURITY_HEADERS
         }
       });
     }
 
-    // Validate origin (exact match only)
-    if (!ALLOWED_ORIGINS.has(origin)) {
+    // Allow authenticated backend requests (skip origin check)
+    // Otherwise validate origin (exact match only)
+    if (!isBackend && !ALLOWED_ORIGINS.has(origin)) {
       return errorResponse('Forbidden', 403, null);
     }
 
@@ -169,12 +189,15 @@ export default {
       return errorResponse('Request too large', 413, origin);
     }
 
-    // Check rate limit
-    const clientIP = getClientIP(request);
-    const rateCheck = await checkRateLimit(clientIP, env);
+    // Check rate limit (skip for authenticated backend)
+    let rateCheck = { allowed: true, remaining: -1, dailyRemaining: -1 };
+    if (!isBackend) {
+      const clientIP = getClientIP(request);
+      rateCheck = await checkRateLimit(clientIP, env);
 
-    if (!rateCheck.allowed) {
-      return errorResponse(rateCheck.reason, 429, origin, rateCheck.retryAfter);
+      if (!rateCheck.allowed) {
+        return errorResponse(rateCheck.reason, 429, origin, rateCheck.retryAfter);
+      }
     }
 
     // Route to handlers
