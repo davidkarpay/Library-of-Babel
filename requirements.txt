@@ -2,6 +2,7 @@
 youtube-transcript-api
 requests
 jinja2
+beautifulsoup4
 
 # Channel import
 scrapetube
