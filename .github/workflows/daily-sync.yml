@@ -85,7 +85,13 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add metadata/ papers/ site/ library.json
+          # Only add files if they exist
+          for path in metadata papers site library.json; do
+            if [ -e "$path" ]; then
+              git add "$path"
+            fi
+          done
+
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
