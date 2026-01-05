@@ -41,6 +41,7 @@ site/
 # User's transcripts and metadata
 transcripts/
 metadata/
+papers/
 
 # Library index (generated)
 library.json
@@ -63,3 +64,7 @@ import_queue.json
 # Paper PDF cache (temporary downloads)
 papers_cache/
 *.pdf
+
+# Cloudflare build artifacts
+cloudflare/.wrangler/
+cloudflare/node_modules/
