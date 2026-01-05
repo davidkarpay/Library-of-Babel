@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Podcasts - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_papers %}../papers/index.html{% endblock %}
+{% block nav_podcasts %}index.html{% endblock %}
+{% block nav_blogs %}../blogs/index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<div class="page-header">
+    <h2>Podcasts</h2>
+    <p class="subtitle">{{ entries|length }} episodes from {{ shows|length if shows else 0 }} shows</p>
+</div>
+
+<!-- Show Filters -->
+{% if shows %}
+<div class="filters" style="margin-bottom: 1.5rem;">
+    <strong>Filter by show:</strong>
+    {% for show in shows %}
+    <a href="../shows/{{ show.slug }}.html" class="tag">{{ show.name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Topic Filters -->
+<div class="filters" style="margin-bottom: 1.5rem;">
+    <strong>Filter by topic:</strong>
+    {% for topic in topics %}
+    <a href="../topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+    {% endfor %}
+</div>
+
+<!-- Sort Options -->
+<div class="sort-options" style="margin-bottom: 1rem; color: var(--text-muted);">
+    Sorted by: <strong>Date Published</strong> (newest first)
+</div>
+
+<!-- Podcasts List -->
+<ul class="entry-list podcasts-list">
+    {% for entry in entries %}
+    <li class="entry-card podcast-card">
+        <div class="entry-header">
+            <span class="content-type-badge podcast-badge">Podcast</span>
+            <a href="{{ entry.slug }}.html" class="entry-title">{{ entry.title }}</a>
+        </div>
+        <div class="entry-meta">
+            {% if entry.show %}
+            <a href="../shows/{{ entry.show.slug }}.html" class="show-link">{{ entry.show.name }}</a>
+            •
+            {% endif %}
+            {% for topic in entry.facets.topics %}
+            <span class="tag tag-small">{{ topic }}</span>
+            {% endfor %}
+            •
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            •
+            {% if entry.duration_seconds %}
+            <span class="duration">{{ (entry.duration_seconds / 60)|int }} min</span>
+            •
+            {% endif %}
+            <span class="date">{{ entry.published_date }}</span>
+        </div>
+        {% if entry.summary %}
+        <div class="entry-summary">
+            {{ entry.summary[0][:200] }}{% if entry.summary[0]|length > 200 %}...{% endif %}
+        </div>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+{% if entries|length == 0 %}
+<p class="empty-state">No podcasts imported yet. Run <code>python podcast_import.py &lt;rss_feed_url&gt;</code> to import episodes.</p>
+{% endif %}
+
+{% endblock %}

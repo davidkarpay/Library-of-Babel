@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_papers %}../papers/index.html{% endblock %}
+{% block nav_podcasts %}index.html{% endblock %}
+{% block nav_blogs %}../blogs/index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../podcasts/index.html" class="back-link">← Back to Podcasts</a>
+
+<div class="podcast-header">
+    <div class="content-type-badge podcast-badge">Podcast Episode</div>
+    <h2>{{ entry.title }}</h2>
+
+    <div class="podcast-meta" style="margin-top: 0.5rem;">
+        {% if entry.show %}
+        <div class="show-info">
+            <strong>Show:</strong> <a href="../shows/{{ entry.show.slug }}.html">{{ entry.show.name }}</a>
+        </div>
+        {% endif %}
+
+        <div class="podcast-links" style="margin-top: 0.5rem;">
+            {% for topic in entry.facets.topics %}
+            <a href="../topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+            {% endfor %}
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            {% if entry.duration_seconds %}
+            •
+            <span class="duration">{{ (entry.duration_seconds / 60)|int }} minutes</span>
+            {% endif %}
+            •
+            <a href="{{ entry.url }}" target="_blank" style="color: var(--accent);">Episode page ↗</a>
+        </div>
+
+        <div class="dates" style="margin-top: 0.25rem; color: var(--text-muted);">
+            Published: {{ entry.published_date }} • Added: {{ entry.added_date }}
+            {% if entry.transcript_source %}
+            • Transcript: {{ entry.transcript_source }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Audio Player (if audio URL available) -->
+{% if entry.audio_url %}
+<div class="audio-player" style="margin: 1.5rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+    <audio controls style="width: 100%;">
+        <source src="{{ entry.audio_url }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+</div>
+{% endif %}
+
+<!-- Summary -->
+{% if entry.summary %}
+<div class="summary">
+    <h3>Key Insights</h3>
+    <ul>
+        {% for point in entry.summary %}
+        <li>{{ point }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Sections Navigation -->
+{% if entry.sections %}
+<div class="sections-nav">
+    <h3>Episode Sections</h3>
+    <ul>
+        {% for section in entry.sections %}
+        <li>
+            {% if section.start is defined %}
+            <span class="timestamp">{{ '%02d:%02d:%02d'|format(section.start // 3600, (section.start % 3600) // 60, section.start % 60) }}</span>
+            {% endif %}
+            <strong>{{ section.title }}</strong>
+            {% if section.description %} - {{ section.description }}{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Full Transcript (if available) -->
+{% if markdown_content %}
+<div class="transcript-content">
+    <h3>Transcript</h3>
+    {{ markdown_content | safe }}
+</div>
+{% endif %}
+
+{% endblock %}

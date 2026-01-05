@@ -48,23 +48,48 @@ SITE_DIR = BASE_DIR / "site"
 INDEX_DIR = BASE_DIR / "search_index"
 METADATA_DIR = BASE_DIR / "metadata"
 TRANSCRIPTS_DIR = BASE_DIR / "transcripts"
+PAPERS_DIR = BASE_DIR / "papers"
+PODCASTS_DIR = BASE_DIR / "podcasts"
+BLOGS_DIR = BASE_DIR / "blogs"
 
 # === Whoosh Schema ===
+# Unified schema for all content types: video, paper, podcast, blog
 schema = Schema(
-    video_id=ID(stored=True, unique=True),
+    # Core fields (all types)
+    entry_id=ID(stored=True, unique=True),
     slug=ID(stored=True),
+    content_type=ID(stored=True),  # video, paper, podcast, blog
     title=TEXT(stored=True),
     summary=TEXT(stored=True),
     topics=TEXT(stored=True),
     format=STORED,
     difficulty=STORED,
-    channel_name=TEXT(stored=True),
-    channel_slug=STORED,
     duration_seconds=NUMERIC(stored=True),
     url=STORED,
     added_date=STORED,
-    transcript=TEXT,  # Full text, searchable but not stored
-    sections=STORED   # JSON string of sections
+    published_date=STORED,
+    content=TEXT,  # Full text content (transcript, paper, blog), searchable but not stored
+    sections=STORED,  # JSON string of sections
+
+    # Video-specific
+    channel_name=TEXT(stored=True),
+    channel_slug=STORED,
+
+    # Paper-specific
+    authors=TEXT(stored=True),
+    arxiv_id=STORED,
+
+    # Podcast-specific
+    show_name=TEXT(stored=True),
+    show_slug=STORED,
+    audio_url=STORED,
+
+    # Blog-specific
+    blog_name=TEXT(stored=True),
+    blog_slug=STORED,
+    author_name=TEXT(stored=True),
+    word_count=NUMERIC(stored=True),
+    quality_score=NUMERIC(stored=True)
 )
 
 # === Flask App ===
@@ -90,7 +115,7 @@ def extract_plain_text(markdown_content: str) -> str:
 
 
 def build_index():
-    """Build or rebuild the search index from metadata and transcripts."""
+    """Build or rebuild the search index from metadata and content files."""
     INDEX_DIR.mkdir(exist_ok=True)
 
     print("Building search index...")
@@ -98,7 +123,8 @@ def build_index():
     ix = create_in(str(INDEX_DIR), schema)
     writer = ix.writer()
 
-    count = 0
+    counts = {"video": 0, "paper": 0, "podcast": 0, "blog": 0}
+
     for json_file in METADATA_DIR.glob("*.json"):
         slug = json_file.stem
 
@@ -107,50 +133,88 @@ def build_index():
             with open(json_file) as f:
                 meta = json.load(f)
 
-            # Load transcript text
-            transcript_path = TRANSCRIPTS_DIR / f"{slug}.md"
-            transcript_text = ""
-            if transcript_path.exists():
-                raw_content = transcript_path.read_text()
-                transcript_text = extract_plain_text(raw_content)
+            content_type = meta.get("content_type", "video")
 
-            # Extract channel info
-            channel = meta.get("channel", {})
-            channel_name = channel.get("name", "")
-            channel_slug = channel.get("slug", "")
-
-            # Build summary text
+            # Build common fields
             summary_list = meta.get("summary", [])
             summary_text = " ".join(summary_list) if summary_list else ""
-
-            # Build topics text
             topics_list = meta.get("facets", {}).get("topics", [])
             topics_text = " ".join(topics_list)
 
-            writer.add_document(
-                video_id=meta.get("id", ""),
-                slug=slug,
-                title=meta.get("title", ""),
-                summary=summary_text,
-                topics=topics_text,
-                format=meta.get("facets", {}).get("format", ""),
-                difficulty=meta.get("facets", {}).get("difficulty", ""),
-                channel_name=channel_name,
-                channel_slug=channel_slug,
-                duration_seconds=meta.get("duration_seconds", 0),
-                url=meta.get("url", ""),
-                added_date=meta.get("added_date", ""),
-                transcript=transcript_text,
-                sections=json.dumps(meta.get("sections", []))
-            )
-            count += 1
-            print(f"  Indexed: {slug}")
+            # Load full text content based on type
+            content_text = ""
+            if content_type == "video":
+                content_path = TRANSCRIPTS_DIR / f"{slug}.md"
+            elif content_type == "paper":
+                content_path = PAPERS_DIR / f"{slug}.md"
+            elif content_type == "podcast":
+                content_path = PODCASTS_DIR / f"{slug}.md"
+            elif content_type == "blog":
+                content_path = BLOGS_DIR / f"{slug}.md"
+            else:
+                content_path = None
+
+            if content_path and content_path.exists():
+                raw_content = content_path.read_text()
+                content_text = extract_plain_text(raw_content)
+
+            # Common document fields
+            doc = {
+                "entry_id": meta.get("id", ""),
+                "slug": slug,
+                "content_type": content_type,
+                "title": meta.get("title", ""),
+                "summary": summary_text,
+                "topics": topics_text,
+                "format": meta.get("facets", {}).get("format", ""),
+                "difficulty": meta.get("facets", {}).get("difficulty", ""),
+                "duration_seconds": meta.get("duration_seconds", 0),
+                "url": meta.get("url", ""),
+                "added_date": meta.get("added_date", ""),
+                "published_date": meta.get("published_date", ""),
+                "content": content_text,
+                "sections": json.dumps(meta.get("sections", [])),
+            }
+
+            # Type-specific fields
+            if content_type == "video":
+                channel = meta.get("channel", {})
+                doc["channel_name"] = channel.get("name", "")
+                doc["channel_slug"] = channel.get("slug", "")
+
+            elif content_type == "paper":
+                authors = meta.get("authors", [])
+                doc["authors"] = " ".join(authors) if authors else ""
+                doc["arxiv_id"] = meta.get("arxiv_id", "")
+
+            elif content_type == "podcast":
+                show = meta.get("show", {})
+                doc["show_name"] = show.get("name", "")
+                doc["show_slug"] = show.get("slug", "")
+                doc["audio_url"] = meta.get("audio_url", "")
+
+            elif content_type == "blog":
+                blog = meta.get("blog", {})
+                doc["blog_name"] = blog.get("name", "")
+                doc["blog_slug"] = blog.get("slug", "")
+                author = meta.get("author", {})
+                doc["author_name"] = author.get("name", "") if isinstance(author, dict) else str(author)
+                doc["word_count"] = meta.get("word_count", 0)
+                doc["quality_score"] = meta.get("quality_score", 0)
+
+            writer.add_document(**doc)
+            counts[content_type] = counts.get(content_type, 0) + 1
+            print(f"  [{content_type}] Indexed: {slug}")
 
         except Exception as e:
             print(f"  Error indexing {json_file.name}: {e}")
 
     writer.commit()
-    print(f"\nIndex built with {count} documents")
+    total = sum(counts.values())
+    print(f"\nIndex built with {total} documents:")
+    for ctype, count in counts.items():
+        if count > 0:
+            print(f"  - {ctype}: {count}")
     return ix
 
 
@@ -214,9 +278,9 @@ def find_matching_sections(sections_json: str, query_terms: list, url: str) -> l
     return matching[:3]  # Limit to top 3 matching sections
 
 
-def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = None):
+def search_content(query: str, limit: int = 20, offset: int = 0, filters: dict = None):
     """
-    Search videos with query and optional filters.
+    Search all content types with query and optional filters.
 
     Returns dict with query, total, and results list.
     """
@@ -224,11 +288,10 @@ def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = 
 
     # Parse query to search multiple fields with boosting
     parser = MultifieldParser(
-        ["title", "summary", "transcript", "channel_name", "topics"],
+        ["title", "summary", "content", "channel_name", "show_name", "blog_name", "author_name", "authors", "topics"],
         schema=ix.schema,
         group=OrGroup
     )
-    # Search across multiple fields with OR grouping
 
     try:
         q = parser.parse(query)
@@ -244,6 +307,8 @@ def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = 
         filter_q = None
         if filters:
             filter_parts = []
+            if filters.get("content_type"):
+                filter_parts.append(f'content_type:{filters["content_type"]}')
             if filters.get("topic"):
                 filter_parts.append(f'topics:{filters["topic"]}')
             if filters.get("format"):
@@ -252,6 +317,10 @@ def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = 
                 filter_parts.append(f'difficulty:{filters["difficulty"]}')
             if filters.get("channel"):
                 filter_parts.append(f'channel_slug:{filters["channel"]}')
+            if filters.get("show"):
+                filter_parts.append(f'show_slug:{filters["show"]}')
+            if filters.get("blog"):
+                filter_parts.append(f'blog_slug:{filters["blog"]}')
 
             if filter_parts:
                 filter_str = " AND ".join(filter_parts)
@@ -264,6 +333,8 @@ def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = 
         highlighter = HtmlFormatter(tagname="mark")
 
         for hit in results[offset:offset + limit]:
+            content_type = hit.get("content_type", "video")
+
             # Get highlighted fields
             title_highlighted = hit.highlights("title", top=1) or hit["title"]
             summary_highlighted = hit.highlights("summary", top=3) or hit["summary"]
@@ -277,12 +348,13 @@ def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = 
 
             # Parse summary back to list
             summary_text = hit.get("summary", "")
-            # Try to split on common patterns
             summary_list = [s.strip() for s in summary_text.split(". ") if s.strip()]
 
-            formatted.append({
-                "video_id": hit["video_id"],
+            # Build base result
+            result = {
+                "entry_id": hit["entry_id"],
                 "slug": hit["slug"],
+                "content_type": content_type,
                 "title": hit["title"],
                 "title_highlighted": title_highlighted,
                 "summary": summary_list[:3],
@@ -295,20 +367,49 @@ def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = 
                     "format": hit.get("format", ""),
                     "difficulty": hit.get("difficulty", "")
                 },
-                "channel": {
-                    "name": hit.get("channel_name", ""),
-                    "slug": hit.get("channel_slug", "")
-                },
                 "added_date": hit.get("added_date", ""),
+                "published_date": hit.get("published_date", ""),
                 "matching_sections": matching_sections,
                 "score": hit.score
-            })
+            }
+
+            # Add type-specific fields
+            if content_type == "video":
+                result["channel"] = {
+                    "name": hit.get("channel_name", ""),
+                    "slug": hit.get("channel_slug", "")
+                }
+            elif content_type == "paper":
+                result["authors"] = hit.get("authors", "").split() if hit.get("authors") else []
+                result["arxiv_id"] = hit.get("arxiv_id", "")
+            elif content_type == "podcast":
+                result["show"] = {
+                    "name": hit.get("show_name", ""),
+                    "slug": hit.get("show_slug", "")
+                }
+                result["audio_url"] = hit.get("audio_url", "")
+            elif content_type == "blog":
+                result["blog"] = {
+                    "name": hit.get("blog_name", ""),
+                    "slug": hit.get("blog_slug", "")
+                }
+                result["author"] = hit.get("author_name", "")
+                result["word_count"] = hit.get("word_count", 0)
+                result["quality_score"] = hit.get("quality_score", 0)
+
+            formatted.append(result)
 
         return {
             "query": query,
             "total": len(results),
             "results": formatted
         }
+
+
+# Alias for backwards compatibility
+def search_videos(query: str, limit: int = 20, offset: int = 0, filters: dict = None):
+    """Backwards compatible alias for search_content."""
+    return search_content(query, limit, offset, filters)
 
 
 # === Flask Routes ===
@@ -327,7 +428,21 @@ def static_files(path):
 
 @app.route('/api/search')
 def api_search():
-    """Search API endpoint."""
+    """
+    Search API endpoint.
+
+    Query params:
+        q           - Search query (required)
+        limit       - Max results (default 20, max 100)
+        offset      - Pagination offset (default 0)
+        type        - Content type filter: video, paper, podcast, blog
+        topic       - Topic filter
+        format      - Format filter
+        difficulty  - Difficulty filter
+        channel     - Channel slug filter (videos)
+        show        - Show slug filter (podcasts)
+        blog        - Blog slug filter (blogs)
+    """
     query = request.args.get('q', '').strip()
     if not query:
         return jsonify({"error": "Query parameter 'q' is required", "results": []})
@@ -336,6 +451,8 @@ def api_search():
     offset = int(request.args.get('offset', 0))
 
     filters = {}
+    if request.args.get('type'):
+        filters['content_type'] = request.args.get('type')
     if request.args.get('topic'):
         filters['topic'] = request.args.get('topic')
     if request.args.get('format'):
@@ -344,9 +461,13 @@ def api_search():
         filters['difficulty'] = request.args.get('difficulty')
     if request.args.get('channel'):
         filters['channel'] = request.args.get('channel')
+    if request.args.get('show'):
+        filters['show'] = request.args.get('show')
+    if request.args.get('blog'):
+        filters['blog'] = request.args.get('blog')
 
     try:
-        results = search_videos(query, limit, offset, filters if filters else None)
+        results = search_content(query, limit, offset, filters if filters else None)
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e), "results": []})
@@ -369,11 +490,21 @@ def api_rebuild():
 
 @app.route('/api/stats')
 def api_stats():
-    """Get index statistics."""
+    """Get index statistics including content type breakdown."""
     try:
         ix = get_index()
+        total = ix.doc_count()
+
+        # Count by content type
+        type_counts = {"video": 0, "paper": 0, "podcast": 0, "blog": 0}
+        with ix.searcher() as searcher:
+            for doc in searcher.all_stored_fields():
+                ctype = doc.get("content_type", "video")
+                type_counts[ctype] = type_counts.get(ctype, 0) + 1
+
         return jsonify({
-            "documents": ix.doc_count(),
+            "documents": total,
+            "by_type": type_counts,
             "index_path": str(INDEX_DIR)
         })
     except Exception as e:
@@ -385,27 +516,33 @@ def api_stats():
 # Initialize LLM client
 llm = LLMClient()
 
-LIBRARY_SYSTEM_PROMPT = """You are a helpful assistant for a YouTube learning library containing 1,708 indexed video transcripts.
+LIBRARY_SYSTEM_PROMPT = """You are a helpful assistant for a learning library containing indexed videos, research papers, podcasts, and blog posts.
 
 The library covers topics including:
 - AI/ML, Security, DevOps, Databases, Programming, Web Development, Career, Entrepreneurship
 
+Content types available:
+- Videos: YouTube video transcripts with timestamps
+- Papers: Research papers from arXiv and HuggingFace
+- Podcasts: Podcast episodes with transcripts
+- Blogs: Technical blog posts from trusted sources
+
 FORMAT YOUR RESPONSES FOR A CHAT INTERFACE:
-- Use **bold** for video titles and key terms
+- Use **bold** for content titles and key terms
 - Use bullet points (-) for lists, not numbered lists
 - Use ### for section headers sparingly
-- Keep responses concise - 2-4 recommended videos max
+- Keep responses concise - 2-4 recommended items max
 - DO NOT use markdown tables - use bullet lists instead
-- Include timestamps like [00:05:30] when referencing specific sections
+- Include timestamps like [00:05:30] when referencing video/podcast sections
 
 When users ask questions:
-1. Recommend 2-4 most relevant videos with brief explanations
-2. Mention difficulty level and duration
-3. Reference specific sections with timestamps when helpful
+1. Recommend 2-4 most relevant content items with brief explanations
+2. Mention content type, difficulty level, and duration/word count
+3. Reference specific sections with timestamps when helpful (for videos/podcasts)
 4. Suggest what to explore next
 
 Example format:
-**Video Title** (10m, intermediate)
+**Content Title** (video, 10m, intermediate)
 Brief explanation of why this is relevant.
 
 Be concise and scannable. Focus on connecting users with the right content."""
@@ -414,19 +551,39 @@ Be concise and scannable. Focus on connecting users with the right content."""
 def format_search_results_for_llm(results: list) -> str:
     """Format search results as context for the LLM."""
     if not results:
-        return "No matching videos found."
+        return "No matching content found."
 
     lines = []
     for i, r in enumerate(results[:10], 1):
+        content_type = r.get("content_type", "video")
         duration = r.get("duration", "")
         difficulty = r.get("facets", {}).get("difficulty", "")
         topics = ", ".join(r.get("facets", {}).get("topics", []))
-        channel = r.get("channel", {}).get("name", "")
 
-        lines.append(f"{i}. \"{r['title']}\"")
-        lines.append(f"   Duration: {duration} | Difficulty: {difficulty} | Topics: {topics}")
-        if channel:
-            lines.append(f"   Channel: {channel}")
+        lines.append(f"{i}. [{content_type.upper()}] \"{r['title']}\"")
+
+        # Type-specific info
+        if content_type == "video":
+            channel = r.get("channel", {}).get("name", "")
+            lines.append(f"   Duration: {duration} | Difficulty: {difficulty} | Topics: {topics}")
+            if channel:
+                lines.append(f"   Channel: {channel}")
+        elif content_type == "paper":
+            authors = r.get("authors", [])[:3]
+            lines.append(f"   Difficulty: {difficulty} | Topics: {topics}")
+            if authors:
+                lines.append(f"   Authors: {', '.join(authors)}")
+        elif content_type == "podcast":
+            show = r.get("show", {}).get("name", "")
+            lines.append(f"   Duration: {duration} | Difficulty: {difficulty} | Topics: {topics}")
+            if show:
+                lines.append(f"   Show: {show}")
+        elif content_type == "blog":
+            author = r.get("author", "")
+            word_count = r.get("word_count", 0)
+            lines.append(f"   Words: {word_count} | Difficulty: {difficulty} | Topics: {topics}")
+            if author:
+                lines.append(f"   Author: {author}")
 
         # Add summary bullets if available
         summary = r.get("summary", [])
@@ -434,12 +591,13 @@ def format_search_results_for_llm(results: list) -> str:
             for bullet in summary[:2]:
                 lines.append(f"   - {bullet}")
 
-        # Add matching sections
-        sections = r.get("matching_sections", [])
-        if sections:
-            lines.append("   Key sections:")
-            for sec in sections[:2]:
-                lines.append(f"     [{sec['timestamp']}] {sec['title']}")
+        # Add matching sections (for videos and podcasts)
+        if content_type in ("video", "podcast"):
+            sections = r.get("matching_sections", [])
+            if sections:
+                lines.append("   Key sections:")
+                for sec in sections[:2]:
+                    lines.append(f"     [{sec['timestamp']}] {sec['title']}")
 
         lines.append("")
 

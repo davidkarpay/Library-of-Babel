@@ -65,6 +65,19 @@ import_queue.json
 papers_cache/
 *.pdf
 
+# Podcast audio cache (temporary downloads)
+podcasts_cache/
+
+# Blog HTML cache (temporary downloads)
+blogs_cache/
+
+# Blog pending review queue (user-specific workflow)
+pending_blogs.json
+
+# Podcast and blog content directories (user-specific)
+podcasts/
+blogs/
+
 # Cloudflare build artifacts
 cloudflare/.wrangler/
 cloudflare/node_modules/

@@ -1,0 +1,25 @@
+{
+  "trusted_sources": [
+    {"domain": "simonwillison.net", "author": "Simon Willison"},
+    {"domain": "karpathy.github.io", "author": "Andrej Karpathy"},
+    {"domain": "paulgraham.com", "author": "Paul Graham"},
+    {"domain": "martinfowler.com", "author": "Martin Fowler"},
+    {"domain": "blog.codinghorror.com", "author": "Jeff Atwood"},
+    {"domain": "joelonsoftware.com", "author": "Joel Spolsky"},
+    {"domain": "kentcdodds.com", "author": "Kent C. Dodds"},
+    {"domain": "overreacted.io", "author": "Dan Abramov"},
+    {"domain": "blog.cleancoder.com", "author": "Robert C. Martin"},
+    {"domain": "lethain.com", "author": "Will Larson"},
+    {"domain": "staffeng.com", "author": "Will Larson"},
+    {"domain": "danluu.com", "author": "Dan Luu"},
+    {"domain": "rachelbythebay.com", "author": "Rachel Kroll"},
+    {"domain": "jvns.ca", "author": "Julia Evans"},
+    {"domain": "blog.acolyer.org", "author": "Adrian Colyer"},
+    {"domain": "fs.blog", "author": "Farnam Street"},
+    {"domain": "waitbutwhy.com", "author": "Tim Urban"},
+    {"domain": "gwern.net", "author": "Gwern Branwen"},
+    {"domain": "stratechery.com", "author": "Ben Thompson"},
+    {"domain": "lesswrong.com", "author": "LessWrong Community"}
+  ],
+  "_comment": "Trusted sources are auto-approved without quality scoring"
+}

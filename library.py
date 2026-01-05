@@ -23,6 +23,8 @@ BASE_DIR = Path(__file__).parent
 METADATA_DIR = BASE_DIR / "metadata"
 TRANSCRIPTS_DIR = BASE_DIR / "transcripts"
 PAPERS_DIR = BASE_DIR / "papers"
+PODCASTS_DIR = BASE_DIR / "podcasts"
+BLOGS_DIR = BASE_DIR / "blogs"
 TEMPLATES_DIR = BASE_DIR / "templates"
 SITE_DIR = BASE_DIR / "site"
 
@@ -92,8 +94,8 @@ def build_alpha_index(entries: list) -> dict:
 
 
 def build_content_type_index(entries: list) -> dict:
-    """Build index of entries by content type (video/paper)."""
-    index = {"video": [], "paper": []}
+    """Build index of entries by content type (video/paper/podcast/blog)."""
+    index = {"video": [], "paper": [], "podcast": [], "blog": []}
     for entry in entries:
         content_type = entry.get("content_type", "video")
         if content_type in index:
@@ -101,6 +103,28 @@ def build_content_type_index(entries: list) -> dict:
         else:
             index["video"].append(entry)  # Default to video
     return index
+
+
+def build_show_index(entries: list) -> dict:
+    """Build index of podcast entries by show."""
+    shows = defaultdict(list)
+    for entry in entries:
+        if entry.get("content_type") == "podcast":
+            show = entry.get("show", {})
+            show_slug = show.get("slug", "unknown-show")
+            shows[show_slug].append(entry)
+    return shows
+
+
+def build_blog_source_index(entries: list) -> dict:
+    """Build index of blog entries by source."""
+    sources = defaultdict(list)
+    for entry in entries:
+        if entry.get("content_type") == "blog":
+            blog = entry.get("blog", {})
+            blog_slug = blog.get("slug", "unknown-blog")
+            sources[blog_slug].append(entry)
+    return sources
 
 
 def format_duration(seconds) -> str:
@@ -138,10 +162,14 @@ def generate_site():
     channel_index = build_channel_index(entries)
     alpha_index = build_alpha_index(entries)
     content_type_index = build_content_type_index(entries)
+    show_index = build_show_index(entries)
+    blog_source_index = build_blog_source_index(entries)
 
     video_count = len(content_type_index["video"])
     paper_count = len(content_type_index["paper"])
-    print(f"  Videos: {video_count}, Papers: {paper_count}")
+    podcast_count = len(content_type_index["podcast"])
+    blog_count = len(content_type_index["blog"])
+    print(f"  Videos: {video_count}, Papers: {paper_count}, Podcasts: {podcast_count}, Blogs: {blog_count}")
 
     # Set up Jinja environment
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
@@ -154,6 +182,9 @@ def generate_site():
     (SITE_DIR / "topics").mkdir()
     (SITE_DIR / "transcripts").mkdir()
     (SITE_DIR / "papers").mkdir()
+    (SITE_DIR / "podcasts").mkdir()
+    (SITE_DIR / "shows").mkdir()
+    (SITE_DIR / "blogs").mkdir()
     (SITE_DIR / "channels").mkdir()
     (SITE_DIR / "browse").mkdir()
     (SITE_DIR / "assets").mkdir()
@@ -182,7 +213,9 @@ def generate_site():
         difficulties=["beginner", "intermediate", "advanced"],
         channels=channels_list[:10],
         video_count=video_count,
-        paper_count=paper_count
+        paper_count=paper_count,
+        podcast_count=podcast_count,
+        blog_count=blog_count
     )
     (SITE_DIR / "index.html").write_text(index_html)
 
@@ -322,6 +355,86 @@ def generate_site():
     print("Copying docent widget...")
     copy_widget_files()
 
+    # Generate podcast pages
+    if podcast_count > 0:
+        print("Generating podcast pages...")
+        try:
+            podcast_template = env.get_template("podcast.html")
+            for entry in content_type_index["podcast"]:
+                entry["slug"] = entry["_filename"]
+
+                # Read the markdown content
+                md_file = PODCASTS_DIR / f"{entry['_filename']}.md"
+                if md_file.exists():
+                    md_content = md_file.read_text()
+                else:
+                    md_content = ""
+
+                podcast_html = podcast_template.render(
+                    entry=entry,
+                    markdown_content=md_content,
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count
+                )
+                (SITE_DIR / "podcasts" / f"{entry['_filename']}.html").write_text(podcast_html)
+
+            # Generate podcasts index page
+            print("Generating podcasts index...")
+            podcasts_index_template = env.get_template("podcasts_index.html")
+            podcasts_index_html = podcasts_index_template.render(
+                entries=content_type_index["podcast"],
+                video_count=video_count,
+                paper_count=paper_count,
+                podcast_count=podcast_count,
+                blog_count=blog_count
+            )
+            (SITE_DIR / "podcasts" / "index.html").write_text(podcasts_index_html)
+
+        except Exception as e:
+            print(f"  Warning: Could not generate podcast pages: {e}")
+
+    # Generate blog pages
+    if blog_count > 0:
+        print("Generating blog pages...")
+        try:
+            blog_template = env.get_template("blog.html")
+            for entry in content_type_index["blog"]:
+                entry["slug"] = entry["_filename"]
+
+                # Read the markdown content
+                md_file = BLOGS_DIR / f"{entry['_filename']}.md"
+                if md_file.exists():
+                    md_content = md_file.read_text()
+                else:
+                    md_content = ""
+
+                blog_html = blog_template.render(
+                    entry=entry,
+                    markdown_content=md_content,
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count
+                )
+                (SITE_DIR / "blogs" / f"{entry['_filename']}.html").write_text(blog_html)
+
+            # Generate blogs index page
+            print("Generating blogs index...")
+            blogs_index_template = env.get_template("blogs_index.html")
+            blogs_index_html = blogs_index_template.render(
+                entries=content_type_index["blog"],
+                video_count=video_count,
+                paper_count=paper_count,
+                podcast_count=podcast_count,
+                blog_count=blog_count
+            )
+            (SITE_DIR / "blogs" / "index.html").write_text(blogs_index_html)
+
+        except Exception as e:
+            print(f"  Warning: Could not generate blog pages: {e}")
+
     # Write library.json
     print("Writing library.json...")
     library_data = {
@@ -334,7 +447,9 @@ def generate_site():
         "channels": [{"slug": c["slug"], "name": c["name"], "count": c["count"]} for c in channels_list],
         "total": len(entries),
         "video_count": video_count,
-        "paper_count": paper_count
+        "paper_count": paper_count,
+        "podcast_count": podcast_count,
+        "blog_count": blog_count
     }
     with open(SITE_DIR / "library.json", "w") as f:
         json.dump(library_data, f, indent=2)
@@ -1236,6 +1351,16 @@ header a {
 
 .video-badge {
     background: #ef4444;
+    color: white;
+}
+
+.podcast-badge {
+    background: #22c55e;
+    color: white;
+}
+
+.blog-badge {
+    background: #f59e0b;
     color: white;
 }
 

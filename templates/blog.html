@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_papers %}../papers/index.html{% endblock %}
+{% block nav_podcasts %}../podcasts/index.html{% endblock %}
+{% block nav_blogs %}index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../blogs/index.html" class="back-link">← Back to Blogs</a>
+
+<div class="blog-header">
+    <div class="content-type-badge blog-badge">Blog Post</div>
+    {% if entry.is_trusted_source %}
+    <span class="trusted-badge" title="Trusted source">★ Trusted Source</span>
+    {% endif %}
+    <h2>{{ entry.title }}</h2>
+
+    <div class="blog-meta" style="margin-top: 0.5rem;">
+        {% if entry.author %}
+        <div class="author-info">
+            <strong>Author:</strong> {{ entry.author.name }}
+        </div>
+        {% endif %}
+
+        {% if entry.blog %}
+        <div class="blog-info" style="margin-top: 0.25rem;">
+            <strong>Blog:</strong> <a href="../blogs/source/{{ entry.blog.slug }}.html">{{ entry.blog.name }}</a>
+            ({{ entry.blog.domain }})
+        </div>
+        {% endif %}
+
+        <div class="blog-links" style="margin-top: 0.5rem;">
+            {% for topic in entry.facets.topics %}
+            <a href="../topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+            {% endfor %}
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            {% if entry.word_count %}
+            •
+            <span class="word-count">{{ entry.word_count }} words</span>
+            {% endif %}
+            •
+            <a href="{{ entry.url }}" target="_blank" style="color: var(--accent);">Original article ↗</a>
+        </div>
+
+        {% if entry.quality_score and not entry.is_trusted_source %}
+        <div class="quality-info" style="margin-top: 0.25rem; color: var(--text-muted);">
+            <strong>Quality Score:</strong> {{ entry.quality_score }}/100
+            {% if entry.quality_flags %}
+            • Flags: {{ entry.quality_flags|join(', ') }}
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="dates" style="margin-top: 0.25rem; color: var(--text-muted);">
+            Published: {{ entry.published_date }} • Added: {{ entry.added_date }}
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+{% if entry.summary %}
+<div class="summary">
+    <h3>Key Insights</h3>
+    <ul>
+        {% for point in entry.summary %}
+        <li>{{ point }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Sections Navigation -->
+{% if entry.sections %}
+<div class="sections-nav">
+    <h3>Article Sections</h3>
+    <ul>
+        {% for section in entry.sections %}
+        <li>
+            <strong>{{ section.title }}</strong>
+            {% if section.description %} - {{ section.description }}{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Full Article Content -->
+{% if markdown_content %}
+<div class="article-content">
+    <h3>Full Article</h3>
+    {{ markdown_content | safe }}
+</div>
+{% endif %}
+
+{% endblock %}
