@@ -1,0 +1,19 @@
+# Core dependencies
+youtube-transcript-api
+requests
+jinja2
+
+# Channel import
+scrapetube
+
+# Search server
+flask
+whoosh
+
+# Podcast/Blog import
+feedparser
+trafilatura
+
+# Security
+bleach
+defusedxml

@@ -6,6 +6,15 @@ on:
     - cron: '0 14 * * *'
   workflow_dispatch:
     inputs:
+      sources:
+        description: 'Sources to sync'
+        required: false
+        default: 'huggingface arxiv'
+        type: choice
+        options:
+          - 'huggingface'
+          - 'arxiv'
+          - 'huggingface arxiv'
       date:
         description: 'Specific date to sync (YYYY-MM-DD)'
         required: false
@@ -14,9 +23,17 @@ on:
         required: false
         default: '0'
       min_upvotes:
-        description: 'Minimum upvotes filter'
+        description: 'Minimum upvotes filter (HuggingFace)'
         required: false
         default: '10'
+      arxiv_categories:
+        description: 'arXiv categories (space-separated)'
+        required: false
+        default: 'cs.AI cs.LG cs.CL'
+      arxiv_limit:
+        description: 'Max papers from arXiv'
+        required: false
+        default: '20'
 
 jobs:
   sync-papers:
@@ -44,13 +61,22 @@ jobs:
           OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
           OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
         run: |
+          # Build the sync command
+          SOURCES="${{ github.event.inputs.sources || 'huggingface arxiv' }}"
+          MIN_UPVOTES="${{ github.event.inputs.min_upvotes || '10' }}"
+          ARXIV_CATEGORIES="${{ github.event.inputs.arxiv_categories || 'cs.AI cs.LG cs.CL' }}"
+          ARXIV_LIMIT="${{ github.event.inputs.arxiv_limit || '20' }}"
+
+          CMD="python sync_daily.py --source $SOURCES --min-upvotes $MIN_UPVOTES --arxiv-categories $ARXIV_CATEGORIES --arxiv-limit $ARXIV_LIMIT"
+
           if [ -n "${{ github.event.inputs.date }}" ]; then
-            python sync_daily.py --date "${{ github.event.inputs.date }}" --min-upvotes ${{ github.event.inputs.min_upvotes || '10' }}
+            CMD="$CMD --date ${{ github.event.inputs.date }}"
           elif [ "${{ github.event.inputs.backfill_days }}" != "0" ]; then
-            python sync_daily.py --backfill ${{ github.event.inputs.backfill_days }} --min-upvotes ${{ github.event.inputs.min_upvotes || '10' }}
-          else
-            python sync_daily.py --min-upvotes 10
+            CMD="$CMD --backfill ${{ github.event.inputs.backfill_days }}"
           fi
+
+          echo "Running: $CMD"
+          eval $CMD
 
       - name: Configure git
         run: |
@@ -63,9 +89,10 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
+            SOURCES="${{ github.event.inputs.sources || 'huggingface arxiv' }}"
             git commit -m "Daily paper sync: $(date +%Y-%m-%d)
 
-            Automated import from HuggingFace daily papers.
+            Sources: $SOURCES
 
             🤖 Generated with GitHub Actions"
             git push
