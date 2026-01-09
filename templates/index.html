@@ -1,192 +1,230 @@
 {% extends "base.html" %}
 
-{% block title %}YouTube Learning Library{% endblock %}
+{% block title %}Learning Library{% endblock %}
 
 {% block content %}
-<!-- Dual Search Interface -->
-<div class="dual-search">
-    <!-- Left: Traditional Search -->
-    <div class="search-panel">
-        <h3 class="panel-title">Keyword Search</h3>
-        <div class="search-container">
-            <input type="text" id="search-input" placeholder="Search videos, transcripts...">
-            <button id="search-btn">Search</button>
-            <button id="clear-search" style="display: none;">Clear</button>
-        </div>
-        <p class="search-explainer">Matches any keyword across titles, summaries, and transcripts. Use specific terms for better results.</p>
-        <div id="search-results" class="search-results" style="display: none;"></div>
+<!-- Hero Section (Above the Fold) -->
+<section class="hero">
+    <!-- Search Bar -->
+    <div class="hero-search">
+        <input type="text" id="search-input" placeholder="Search videos, papers, podcasts..." autocomplete="off">
+        <button id="search-btn">Search</button>
+        <button id="clear-search" style="display: none;">Clear</button>
     </div>
 
-    <!-- Right: AI Chat Assistant -->
-    <div class="chat-panel">
-        <h3 class="panel-title">AI Assistant</h3>
-        <div class="chat-container">
-            <div id="chat-messages" class="chat-messages">
-                <div class="chat-message assistant">
-                    <p>Ask me anything. I'll find and recommend the most relevant videos from the library.</p>
-                </div>
-            </div>
-            <div class="chat-input-container">
-                <input type="text" id="chat-input" placeholder="e.g., How do I learn about Kubernetes security?">
-                <button id="chat-btn">Ask</button>
-            </div>
-        </div>
+    <!-- AI Chat Input -->
+    <div class="hero-chat">
+        <input type="text" id="chat-input" placeholder="Ask AI: What should I learn about transformers?">
+        <button id="chat-btn">Ask</button>
     </div>
+
+    <!-- Docent Desk -->
+    <div class="docent-desk">
+        <button id="docent-btn" class="docent-icon" title="Help &amp; API Info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>docent desk</span>
+        </button>
+    </div>
+</section>
+
+<!-- Search Results (Hidden by default) -->
+<div id="search-results" class="search-results" style="display: none;"></div>
+
+<!-- Chat Messages (Hidden by default, expands when chat is used) -->
+<div id="chat-container" class="chat-container-expandable" style="display: none;">
+    <div id="chat-messages" class="chat-messages"></div>
 </div>
 
-<!-- Search History Panel -->
-<div class="history-panel">
-    <div class="history-header">
-        <h3 class="panel-title">Search History</h3>
-        <div class="history-controls">
-            <button id="toggle-history" class="history-toggle">Show</button>
-            <button id="clear-history" class="history-clear">Clear All</button>
-        </div>
-    </div>
-    <div id="history-content" class="history-content" style="display: none;">
-        <div id="history-list" class="history-list"></div>
-    </div>
-</div>
+<!-- Docent Modal -->
+<div id="docent-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <button class="modal-close" id="docent-close">&times;</button>
+        <h2>Welcome to the Learning Library</h2>
 
-<!-- Library Content -->
-<div id="library-content">
-<div class="filters">
-    <div class="filter-group">
-        <h3>Topics</h3>
-        <div class="tags">
-            {% for topic in topics %}
-            <a href="topics/{{ topic }}.html" class="tag">{{ topic }}</a>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="filter-group">
-        <h3>Format</h3>
-        <div class="tags">
-            {% for fmt in formats %}
-            <a href="#" class="tag" data-filter="format" data-value="{{ fmt }}">{{ fmt }}</a>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="filter-group">
-        <h3>Difficulty</h3>
-        <div class="tags">
-            {% for diff in difficulties %}
-            <a href="#" class="tag" data-filter="difficulty" data-value="{{ diff }}">{{ diff }}</a>
-            {% endfor %}
-        </div>
-    </div>
-
-    {% if channels %}
-    <div class="filter-group">
-        <h3>Channels</h3>
-        <div class="tags">
-            {% for channel in channels %}
-            <a href="channels/{{ channel.slug }}.html" class="tag">{{ channel.name }}</a>
-            {% endfor %}
-            {% if channels|length >= 10 %}
-            <a href="channels/index.html" class="tag" style="background: var(--accent);">All channels...</a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<div class="entries">
-    {% for entry in entries %}
-    <article class="entry-card {% if entry.content_type == 'paper' %}paper-card{% endif %}"
-             data-topics="{{ entry.facets.topics|join(',') }}"
-             data-format="{{ entry.facets.format }}"
-             data-difficulty="{{ entry.facets.difficulty }}"
-             data-type="{{ entry.content_type|default('video') }}">
-        {% if entry.content_type == 'paper' %}
-        <span class="content-type-badge paper-badge">Paper</span>
-        <h2><a href="papers/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
-        {% else %}
-        <h2><a href="transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
-        {% endif %}
-        <div class="entry-meta">
-            {% if entry.duration_seconds %}
-            <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
-            •
-            {% endif %}
-            {% if entry.upvotes %}
-            <span class="upvotes">▲ {{ entry.upvotes }}</span>
-            •
-            {% endif %}
-            <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
-            •
-            <span class="difficulty">{{ entry.facets.difficulty }}</span>
-            •
-            <span class="date">{{ entry.added_date }}</span>
-        </div>
-        {% if entry.summary %}
-        <div class="entry-summary">
+        <div class="docent-section">
+            <h3>For Humans</h3>
             <ul>
-                {% for point in entry.summary[:3] %}
-                <li>{{ point }}</li>
-                {% endfor %}
+                <li><strong>Search</strong> - Find content by keyword across {{ total_entries }} items</li>
+                <li><strong>AI Chat</strong> - Ask questions, get personalized recommendations</li>
+                <li><strong>Browse</strong> - Scroll down to explore by topic, format, or channel</li>
             </ul>
         </div>
-        {% endif %}
-    </article>
-    {% endfor %}
+
+        <div class="docent-section">
+            <h3>For AI Agents</h3>
+            <ul>
+                <li><a href="/library.json">library.json</a> - Full index ({{ total_entries }} items)</li>
+                <li><a href="/llms.txt">llms.txt</a> - Agent discovery guide</li>
+                <li><a href="/.well-known/ai.json">ai.json</a> - API capabilities</li>
+                <li><a href="/sitemap.xml">sitemap.xml</a> - All pages</li>
+            </ul>
+        </div>
+
+        <div class="docent-section">
+            <h3>API Access</h3>
+            <p>REST API: <code>https://youtube-library-docent.dlkarpay.workers.dev/api/</code></p>
+            <ul class="api-endpoints">
+                <li><code>GET /api/search?q=query</code></li>
+                <li><code>GET /api/recommend?topic=ai-ml</code></li>
+                <li><code>GET /api/whats-new?days=7</code></li>
+                <li><code>POST /api/chat</code></li>
+            </ul>
+        </div>
+
+        <div class="docent-section">
+            <h3>Content</h3>
+            <p>{{ video_count }} videos • {{ paper_count }} papers • {{ podcast_count }} podcasts • {{ blog_count }} blogs</p>
+        </div>
+    </div>
 </div>
 
-</div><!-- End library-content -->
+<!-- Below the Fold: Browse Interface -->
+<div id="library-content">
+    <div class="filters">
+        <!-- Domain Filter Toggle -->
+        <div class="filter-group">
+            <h3>Domain
+                <nav class="domain-filter" aria-label="Domain filter">
+                    <a href="#" data-domain="all" class="active">All</a>
+                    <a href="#" data-domain="computer-science">CS</a>
+                    <a href="#" data-domain="law">Law</a>
+                </nav>
+            </h3>
+        </div>
+
+        <div class="filter-group">
+            <h3>Topics</h3>
+            <div class="tags">
+                {% for topic in topics %}
+                <a href="topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <h3>Format</h3>
+            <div class="tags">
+                {% for fmt in formats %}
+                <a href="#" class="tag" data-filter="format" data-value="{{ fmt }}">{{ fmt }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <h3>Difficulty</h3>
+            <div class="tags">
+                {% for diff in difficulties %}
+                <a href="#" class="tag" data-filter="difficulty" data-value="{{ diff }}">{{ diff }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if channels %}
+        <div class="filter-group">
+            <h3>Channels</h3>
+            <div class="tags">
+                {% for channel in channels %}
+                <a href="channels/{{ channel.slug }}.html" class="tag">{{ channel.name }}</a>
+                {% endfor %}
+                {% if channels|length >= 10 %}
+                <a href="channels/index.html" class="tag" style="background: var(--accent);">All channels...</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="entries">
+        {% for entry in entries %}
+        <article class="entry-card domain-{{ entry.domain|default('computer-science') }} {% if entry.content_type == 'paper' %}paper-card{% elif entry.content_type == 'podcast' %}podcast-card{% elif entry.content_type == 'blog' %}blog-card{% elif entry.content_type == 'legal' %}legal-card{% elif entry.content_type == 'law-journal' %}journal-card{% endif %}"
+                 data-topics="{{ entry.facets.topics|join(',') }}"
+                 data-format="{{ entry.facets.format }}"
+                 data-difficulty="{{ entry.facets.difficulty }}"
+                 data-type="{{ entry.content_type|default('video') }}"
+                 data-domain="{{ entry.domain|default('computer-science') }}">
+            <div class="entry-badges">
+                {% if entry.content_type == 'paper' %}
+                <span class="content-type-badge paper-badge">Paper</span>
+                {% elif entry.content_type == 'podcast' %}
+                <span class="content-type-badge podcast-badge">Podcast</span>
+                {% elif entry.content_type == 'blog' %}
+                <span class="content-type-badge blog-badge">Blog</span>
+                {% elif entry.content_type == 'legal' %}
+                <span class="content-type-badge legal-badge">Legal</span>
+                {% elif entry.content_type == 'law-journal' %}
+                <span class="content-type-badge journal-badge">Journal</span>
+                {% endif %}
+                <span class="domain-badge {{ entry.domain|default('computer-science') }}">{{ entry.domain|default('CS')|replace('computer-science', 'CS')|replace('law', 'Law') }}</span>
+            </div>
+            {% if entry.content_type == 'paper' %}
+            <h2><a href="papers/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+            {% elif entry.content_type == 'podcast' %}
+            <h2><a href="podcasts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+            {% elif entry.content_type == 'blog' %}
+            <h2><a href="blogs/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+            {% elif entry.content_type == 'legal' %}
+            <h2><a href="legal/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+            {% elif entry.content_type == 'law-journal' %}
+            <h2><a href="journals/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+            {% else %}
+            <h2><a href="transcripts/{{ entry._filename }}.html">{{ entry.title }}</a></h2>
+            {% endif %}
+            <div class="entry-meta">
+                {% if entry.duration_seconds %}
+                <span class="duration">{{ entry.duration_seconds|format_duration }}</span>
+                •
+                {% endif %}
+                {% if entry.upvotes %}
+                <span class="upvotes">▲ {{ entry.upvotes }}</span>
+                •
+                {% endif %}
+                <span class="topic">{{ entry.facets.topics|join(', ') }}</span>
+                •
+                <span class="difficulty">{{ entry.facets.difficulty }}</span>
+                •
+                <span class="date">{{ entry.added_date }}</span>
+            </div>
+            {% if entry.summary %}
+            <div class="entry-summary">
+                <ul>
+                    {% for point in entry.summary[:3] %}
+                    <li>{{ point }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+</div>
 
 <script>
-// Simple client-side filtering
-document.querySelectorAll('.tag[data-filter]').forEach(tag => {
-    tag.addEventListener('click', (e) => {
-        e.preventDefault();
-        const filter = tag.dataset.filter;
-        const value = tag.dataset.value;
+// Configuration
+const CONFIG = {
+    API_URL: 'https://youtube-library-api.dlkarpay.workers.dev'
+};
 
-        // Toggle active state
-        tag.classList.toggle('active');
-
-        // Get all active filters
-        const activeFilters = {};
-        document.querySelectorAll('.tag.active[data-filter]').forEach(t => {
-            const f = t.dataset.filter;
-            if (!activeFilters[f]) activeFilters[f] = [];
-            activeFilters[f].push(t.dataset.value);
-        });
-
-        // Filter entries
-        document.querySelectorAll('.entry-card').forEach(card => {
-            let show = true;
-
-            for (const [filterName, values] of Object.entries(activeFilters)) {
-                const cardValue = card.dataset[filterName];
-                if (!values.some(v => cardValue.includes(v))) {
-                    show = false;
-                    break;
-                }
-            }
-
-            card.style.display = show ? 'block' : 'none';
-        });
-    });
-});
-
-// Search functionality (client-side with library.json fallback)
+// DOM Elements
 const searchInput = document.getElementById('search-input');
 const searchBtn = document.getElementById('search-btn');
 const clearBtn = document.getElementById('clear-search');
 const searchResults = document.getElementById('search-results');
 const libraryContent = document.getElementById('library-content');
+const chatInput = document.getElementById('chat-input');
+const chatBtn = document.getElementById('chat-btn');
+const chatContainer = document.getElementById('chat-container');
+const chatMessages = document.getElementById('chat-messages');
+const docentBtn = document.getElementById('docent-btn');
+const docentModal = document.getElementById('docent-modal');
+const docentClose = document.getElementById('docent-close');
 
-// Configuration
-const CONFIG = {
-    // Worker API URL - handles /api/* routes with API key hidden
-    API_URL: 'https://youtube-library-api.dlkarpay.workers.dev'
-};
+let libraryData = null;
 
-let libraryData = null;  // Cached library data for client-side search
-
+// === Utility Functions ===
 function formatDuration(seconds) {
     if (!seconds) return '0m';
     if (seconds < 60) return `${seconds}s`;
@@ -196,7 +234,6 @@ function formatDuration(seconds) {
     return `${h}h ${m}m`;
 }
 
-// Client-side search using library.json
 async function loadLibraryData() {
     if (libraryData) return libraryData;
     try {
@@ -220,14 +257,10 @@ function clientSideSearch(query, entries) {
         const topics = (entry.facets?.topics || []).join(' ').toLowerCase();
 
         for (const term of terms) {
-            // Title matches worth more
             if (title.includes(term)) score += 10;
-            // Summary matches
             if (summary.includes(term)) score += 5;
-            // Topic matches
             if (topics.includes(term)) score += 3;
         }
-
         return { entry, score };
     });
 
@@ -238,96 +271,67 @@ function clientSideSearch(query, entries) {
         .map(s => s.entry);
 }
 
+function getContentUrl(entry) {
+    const type = entry.content_type || 'video';
+    const filename = entry._filename || entry.slug;
+    if (type === 'paper') return `papers/${filename}.html`;
+    if (type === 'podcast') return `podcasts/${filename}.html`;
+    if (type === 'blog') return `blogs/${filename}.html`;
+    return `transcripts/${filename}.html`;
+}
+
+// === Search ===
 async function performSearch() {
     const query = searchInput.value.trim();
     if (!query) return;
 
-    searchResults.innerHTML = '<p style="color: var(--text-muted);">Searching...</p>';
+    searchResults.innerHTML = '<p class="search-loading">Searching...</p>';
     searchResults.style.display = 'block';
     libraryContent.style.display = 'none';
     clearBtn.style.display = 'inline-block';
 
-    // Try server-side search first, fall back to client-side
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`);
         if (!response.ok) throw new Error('Server not available');
         const data = await response.json();
-
         if (data.error) throw new Error(data.error);
-
-        if (data.results.length === 0) {
-            searchResults.innerHTML = '<p style="color: var(--text-muted);">No results found. Try different keywords.</p>';
-            return;
-        }
-
-        searchResults.innerHTML = `
-            <p style="color: var(--text-muted); margin-bottom: 1rem;">
-                Found ${data.total} result${data.total !== 1 ? 's' : ''} for "${data.query}"
-            </p>
-            ${data.results.map(r => `
-                <article class="search-result-card">
-                    <h2><a href="transcripts/${r.slug}.html">${r.title_highlighted || r.title}</a></h2>
-                    <div class="entry-meta">
-                        <span class="duration">${r.duration || formatDuration(r.duration_seconds)}</span>
-                        ${r.channel && r.channel.name ? `• <a href="channels/${r.channel.slug}.html" class="channel-link">${r.channel.name}</a>` : ''}
-                        • <span class="topic">${(r.facets.topics || []).join(', ')}</span>
-                        • <span class="difficulty">${r.facets.difficulty || ''}</span>
-                    </div>
-                    ${r.matching_sections && r.matching_sections.length > 0 ? `
-                        <div class="matching-sections">
-                            <strong style="color: var(--text-muted); font-size: 0.85rem;">Matching sections:</strong>
-                            ${r.matching_sections.map(s => `
-                                <div class="matching-section">
-                                    <a href="${s.timestamp_url}" target="_blank">
-                                        <span class="timestamp">${s.timestamp}</span>
-                                        ${s.title}
-                                    </a>
-                                    <p>${s.description}</p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                </article>
-            `).join('')}
-        `;
+        renderSearchResults(data.results, data.total, query);
     } catch (err) {
-        // Fall back to client-side search
-        console.log('Using client-side search');
+        // Fallback to client-side search
         const data = await loadLibraryData();
-        if (!data || !data.entries) {
-            searchResults.innerHTML = '<p style="color: var(--text-muted);">Could not load library data.</p>';
+        if (!data?.entries) {
+            searchResults.innerHTML = '<p class="search-empty">Could not load library data.</p>';
             return;
         }
-
         const results = clientSideSearch(query, data.entries);
-
-        if (results.length === 0) {
-            searchResults.innerHTML = '<p style="color: var(--text-muted);">No results found. Try different keywords.</p>';
-            return;
-        }
-
-        searchResults.innerHTML = `
-            <p style="color: var(--text-muted); margin-bottom: 1rem;">
-                Found ${results.length} result${results.length !== 1 ? 's' : ''} for "${query}"
-            </p>
-            ${results.map(r => `
-                <article class="search-result-card">
-                    <h2><a href="transcripts/${r._filename}.html">${r.title}</a></h2>
-                    <div class="entry-meta">
-                        <span class="duration">${formatDuration(r.duration_seconds)}</span>
-                        ${r.channel && r.channel.name ? `• <a href="channels/${r.channel.slug}.html" class="channel-link">${r.channel.name}</a>` : ''}
-                        • <span class="topic">${(r.facets?.topics || []).join(', ')}</span>
-                        • <span class="difficulty">${r.facets?.difficulty || ''}</span>
-                    </div>
-                    ${r.summary && r.summary.length > 0 ? `
-                        <div class="entry-summary">
-                            <ul>${r.summary.slice(0, 2).map(s => `<li>${s}</li>`).join('')}</ul>
-                        </div>
-                    ` : ''}
-                </article>
-            `).join('')}
-        `;
+        renderSearchResults(results, results.length, query, true);
     }
+}
+
+function renderSearchResults(results, total, query, isClientSide = false) {
+    if (results.length === 0) {
+        searchResults.innerHTML = '<p class="search-empty">No results found. Try different keywords.</p>';
+        return;
+    }
+
+    searchResults.innerHTML = `
+        <p class="search-count">Found ${total} result${total !== 1 ? 's' : ''} for "${query}"</p>
+        ${results.map(r => `
+            <article class="search-result-card">
+                <h2><a href="${getContentUrl(r)}">${r.title}</a></h2>
+                <div class="entry-meta">
+                    <span class="duration">${formatDuration(r.duration_seconds)}</span>
+                    • <span class="topic">${(r.facets?.topics || []).join(', ')}</span>
+                    • <span class="difficulty">${r.facets?.difficulty || ''}</span>
+                </div>
+                ${r.summary?.length ? `
+                    <div class="entry-summary">
+                        <ul>${r.summary.slice(0, 2).map(s => `<li>${s}</li>`).join('')}</ul>
+                    </div>
+                ` : ''}
+            </article>
+        `).join('')}
+    `;
 }
 
 function clearSearch() {
@@ -339,16 +343,10 @@ function clearSearch() {
 }
 
 searchBtn.addEventListener('click', performSearch);
-searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') performSearch();
-});
+searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 clearBtn.addEventListener('click', clearSearch);
 
-// AI Chat functionality
-const chatInput = document.getElementById('chat-input');
-const chatBtn = document.getElementById('chat-btn');
-const chatMessages = document.getElementById('chat-messages');
-
+// === Chat ===
 function addChatMessage(content, role) {
     const msgDiv = document.createElement('div');
     msgDiv.className = `chat-message ${role}`;
@@ -357,330 +355,150 @@ function addChatMessage(content, role) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function formatChatResponse(data) {
-    const response = data.response || '';
-
-    // Convert markdown to HTML
-    let html = response
-        // Escape HTML first
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        // Headers
-        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-        // Bold and italic
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-        // Timestamps like [00:05:05]
-        .replace(/\[(\d{2}:\d{2}:\d{2})\]/g, '<span class="timestamp">$1</span>')
-        // Convert markdown tables to HTML
-        .replace(/\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g, (match, header, rows) => {
-            const headers = header.split('|').map(h => h.trim()).filter(h => h);
-            const rowData = rows.trim().split('\n').map(row =>
-                row.split('|').map(c => c.trim()).filter(c => c)
-            );
-            let table = '<table class="chat-table"><thead><tr>';
-            headers.forEach(h => table += `<th>${h}</th>`);
-            table += '</tr></thead><tbody>';
-            rowData.forEach(row => {
-                table += '<tr>';
-                row.forEach(cell => table += `<td>${cell}</td>`);
-                table += '</tr>';
-            });
-            table += '</tbody></table>';
-            return table;
-        });
-
-    // Convert bullet lists (lines starting with -)
-    const lines = html.split('\n');
-    let inList = false;
-    let result = [];
-
-    for (let line of lines) {
-        const isBullet = /^- (.+)$/.test(line.trim());
-        if (isBullet && !inList) {
-            result.push('<ul>');
-            inList = true;
-        } else if (!isBullet && inList) {
-            result.push('</ul>');
-            inList = false;
-        }
-
-        if (isBullet) {
-            result.push(line.replace(/^- (.+)$/, '<li>$1</li>'));
-        } else if (line.trim() === '') {
-            result.push('<br>');
-        } else {
-            result.push(line);
-        }
-    }
-    if (inList) result.push('</ul>');
-
-    html = result.join('\n')
-        // Clean up extra line breaks
-        .replace(/\n(?!<)/g, ' ')
-        .replace(/<br>\s*<br>/g, '<br>')
-        .replace(/<\/h[34]>\s*/g, '</h4>')
-        .replace(/<\/ul>\s*<br>/g, '</ul>')
-        .replace(/<\/table>\s*<br>/g, '</table>');
-
-    // Add clickable video links if videos were returned
-    const videos = data.videos || [];
-    if (videos.length > 0) {
-        html += '<div class="chat-videos">';
-        html += '<strong>Videos found:</strong><ul>';
-        videos.slice(0, 5).forEach(v => {
-            html += `<li><a href="transcripts/${v.slug}.html">${v.title}</a> <span class="meta">(${v.duration || formatDuration(v.duration_seconds)})</span></li>`;
-        });
-        if (videos.length > 5) {
-            html += `<li><em>...and ${videos.length - 5} more</em></li>`;
-        }
-        html += '</ul></div>';
-    }
-
-    return html;
-}
-
-// System prompt for the AI assistant
-const SYSTEM_PROMPT = `You are a helpful assistant for a YouTube learning library containing 1,708 indexed video transcripts.
-
-FORMAT YOUR RESPONSES FOR A CHAT INTERFACE:
-- Use **bold** for video titles and key terms
-- Use bullet points (-) for lists
-- Keep responses concise - 2-4 recommended videos max
-- DO NOT use markdown tables
-- Be concise and scannable`;
-
 async function sendChatMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
 
-    // Add user message
+    // Show chat container
+    chatContainer.style.display = 'block';
     addChatMessage(message, 'user');
     chatInput.value = '';
 
-    // Show loading
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'chat-message assistant loading';
     loadingDiv.innerHTML = '<p>Thinking...</p>';
     chatMessages.appendChild(loadingDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // First, do a client-side search to get relevant videos
+    // Get relevant content via search
     const data = await loadLibraryData();
     const searchResults = data ? clientSideSearch(message, data.entries).slice(0, 10) : [];
 
-    // Build context from search results
     let context = '';
     if (searchResults.length > 0) {
-        context = '\n\nRelevant videos from the library:\n' + searchResults.map((r, i) =>
-            `${i+1}. "${r.title}" (${formatDuration(r.duration_seconds)}, ${r.facets?.difficulty || 'intermediate'})\n   Topics: ${(r.facets?.topics || []).join(', ')}\n   Summary: ${(r.summary || []).slice(0, 2).join(' ')}`
+        context = '\n\nRelevant content from the library:\n' + searchResults.map((r, i) =>
+            `${i+1}. "${r.title}" (${formatDuration(r.duration_seconds)}, ${r.facets?.difficulty || 'intermediate'})\n   Topics: ${(r.facets?.topics || []).join(', ')}`
         ).join('\n');
     }
 
-    const userPrompt = `User query: ${message}${context}\n\nRecommend the most relevant videos and explain why they're useful.`;
+    const systemPrompt = `You are a helpful assistant for a learning library. Keep responses concise (2-4 recommendations max). Use **bold** for titles.`;
+    const userPrompt = `User query: ${message}${context}\n\nRecommend the most relevant content.`;
 
     try {
-        // Call the secure Worker endpoint (holds API key secretly)
         const response = await fetch(`${CONFIG.API_URL}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: 'gpt-oss:120b-cloud',
                 messages: [
-                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ],
                 stream: false
             })
         });
 
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
-
-        const result = await response.json();
         loadingDiv.remove();
-
+        const result = await response.json();
         const aiResponse = result.message?.content || result.response || 'Sorry, I could not generate a response.';
 
-        // Format response with video links
-        const formattedData = {
-            response: aiResponse,
-            videos: searchResults
-        };
+        let html = aiResponse
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+
+        if (searchResults.length > 0) {
+            html += '<div class="chat-videos"><strong>Related:</strong><ul>';
+            searchResults.slice(0, 5).forEach(v => {
+                html += `<li><a href="${getContentUrl(v)}">${v.title}</a></li>`;
+            });
+            html += '</ul></div>';
+        }
 
         const msgDiv = document.createElement('div');
         msgDiv.className = 'chat-message assistant';
-        msgDiv.innerHTML = formatChatResponse(formattedData);
+        msgDiv.innerHTML = html;
         chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
 
     } catch (err) {
         loadingDiv.remove();
-        console.error('Chat error:', err);
-
-        // If API fails, at least show search results
         if (searchResults.length > 0) {
-            const fallbackData = {
-                response: `I found ${searchResults.length} videos matching your query:`,
-                videos: searchResults
-            };
+            let html = `<p>I found ${searchResults.length} relevant items:</p><ul>`;
+            searchResults.slice(0, 5).forEach(v => {
+                html += `<li><a href="${getContentUrl(v)}">${v.title}</a></li>`;
+            });
+            html += '</ul>';
             const msgDiv = document.createElement('div');
             msgDiv.className = 'chat-message assistant';
-            msgDiv.innerHTML = formatChatResponse(fallbackData);
+            msgDiv.innerHTML = html;
             chatMessages.appendChild(msgDiv);
         } else {
-            addChatMessage('Could not connect to AI assistant. Please check your connection.', 'assistant');
+            addChatMessage('Could not connect to AI assistant.', 'assistant');
         }
     }
 }
 
 chatBtn.addEventListener('click', sendChatMessage);
-chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendChatMessage();
-});
+chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
 
-// === Search History ===
-const HISTORY_KEY = 'library_search_history';
-const MAX_HISTORY = 50;
+// === Docent Modal ===
+docentBtn.addEventListener('click', () => { docentModal.style.display = 'flex'; });
+docentClose.addEventListener('click', () => { docentModal.style.display = 'none'; });
+docentModal.addEventListener('click', (e) => { if (e.target === docentModal) docentModal.style.display = 'none'; });
 
-function getHistory() {
-    try {
-        return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
+// === Domain Filtering ===
+let activeDomain = 'all';
+document.querySelectorAll('.domain-filter a[data-domain]').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Update active state
+        document.querySelectorAll('.domain-filter a').forEach(a => a.classList.remove('active'));
+        link.classList.add('active');
+        activeDomain = link.dataset.domain;
 
-function saveHistory(history) {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
-}
-
-function addToHistory(query, type, resultCount = 0) {
-    const history = getHistory();
-    const entry = {
-        query: query,
-        type: type, // 'keyword' or 'ai'
-        timestamp: new Date().toISOString(),
-        resultCount: resultCount
-    };
-    // Remove duplicate if exists
-    const filtered = history.filter(h => !(h.query === query && h.type === type));
-    filtered.unshift(entry);
-    saveHistory(filtered);
-    renderHistory();
-}
-
-function formatHistoryTime(isoString) {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-}
-
-function renderHistory() {
-    const history = getHistory();
-    const historyList = document.getElementById('history-list');
-
-    if (history.length === 0) {
-        historyList.innerHTML = '<p class="history-empty">No search history yet.</p>';
-        return;
-    }
-
-    historyList.innerHTML = history.map((entry, idx) => `
-        <div class="history-item" data-index="${idx}">
-            <div class="history-item-main">
-                <span class="history-type ${entry.type}">${entry.type === 'ai' ? 'AI' : 'Search'}</span>
-                <span class="history-query">${entry.query}</span>
-            </div>
-            <div class="history-item-meta">
-                <span class="history-time">${formatHistoryTime(entry.timestamp)}</span>
-                ${entry.resultCount ? `<span class="history-results">${entry.resultCount} results</span>` : ''}
-                <button class="history-rerun" data-query="${entry.query.replace(/"/g, '&quot;')}" data-type="${entry.type}">Run</button>
-                <button class="history-delete" data-index="${idx}">×</button>
-            </div>
-        </div>
-    `).join('');
-
-    // Add click handlers
-    historyList.querySelectorAll('.history-rerun').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const query = e.target.dataset.query;
-            const type = e.target.dataset.type;
-            if (type === 'ai') {
-                chatInput.value = query;
-                sendChatMessage();
+        // Filter cards
+        document.querySelectorAll('.entry-card').forEach(card => {
+            const cardDomain = card.dataset.domain || 'computer-science';
+            if (activeDomain === 'all' || cardDomain === activeDomain) {
+                card.style.display = '';
             } else {
-                searchInput.value = query;
-                performSearch();
+                card.style.display = 'none';
             }
         });
     });
+});
 
-    historyList.querySelectorAll('.history-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const idx = parseInt(e.target.dataset.index);
-            const history = getHistory();
-            history.splice(idx, 1);
-            saveHistory(history);
-            renderHistory();
+// === Filtering ===
+document.querySelectorAll('.tag[data-filter]').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+        e.preventDefault();
+        tag.classList.toggle('active');
+
+        const activeFilters = {};
+        document.querySelectorAll('.tag.active[data-filter]').forEach(t => {
+            const f = t.dataset.filter;
+            if (!activeFilters[f]) activeFilters[f] = [];
+            activeFilters[f].push(t.dataset.value);
+        });
+
+        document.querySelectorAll('.entry-card').forEach(card => {
+            let show = true;
+            // Check domain filter first
+            const cardDomain = card.dataset.domain || 'computer-science';
+            if (activeDomain !== 'all' && cardDomain !== activeDomain) {
+                show = false;
+            }
+            // Then check other filters
+            if (show) {
+                for (const [filterName, values] of Object.entries(activeFilters)) {
+                    const cardValue = card.dataset[filterName];
+                    if (!values.some(v => cardValue.includes(v))) {
+                        show = false;
+                        break;
+                    }
+                }
+            }
+            card.style.display = show ? 'block' : 'none';
         });
     });
-}
-
-// History panel controls
-const toggleHistoryBtn = document.getElementById('toggle-history');
-const clearHistoryBtn = document.getElementById('clear-history');
-const historyContent = document.getElementById('history-content');
-
-toggleHistoryBtn.addEventListener('click', () => {
-    const isHidden = historyContent.style.display === 'none';
-    historyContent.style.display = isHidden ? 'block' : 'none';
-    toggleHistoryBtn.textContent = isHidden ? 'Hide' : 'Show';
-    if (isHidden) renderHistory();
 });
-
-clearHistoryBtn.addEventListener('click', () => {
-    if (confirm('Clear all search history?')) {
-        localStorage.removeItem(HISTORY_KEY);
-        renderHistory();
-    }
-});
-
-// Hook into existing search functions
-const originalPerformSearch = performSearch;
-performSearch = async function() {
-    const query = searchInput.value.trim();
-    await originalPerformSearch();
-    if (query) {
-        // Get result count from displayed results
-        const resultsText = searchResults.querySelector('p')?.textContent || '';
-        const match = resultsText.match(/Found (\d+)/);
-        const count = match ? parseInt(match[1]) : 0;
-        addToHistory(query, 'keyword', count);
-    }
-};
-
-const originalSendChatMessage = sendChatMessage;
-sendChatMessage = async function() {
-    const query = chatInput.value.trim();
-    if (query) {
-        addToHistory(query, 'ai');
-    }
-    await originalSendChatMessage();
-};
-
-// Initial render
-renderHistory();
 </script>
 {% endblock %}

@@ -1,0 +1,53 @@
+{
+  "legal_feeds": [
+    {
+      "name": "SCOTUSblog",
+      "feed_url": "https://www.scotusblog.com/feed/",
+      "source_type": "legal_analysis",
+      "jurisdiction": "Federal - Supreme Court",
+      "description": "Expert analysis and coverage of the U.S. Supreme Court",
+      "auto_approve": true
+    },
+    {
+      "name": "Court News Florida",
+      "feed_url": "https://news.flcourts.org/rss/feed/court-news",
+      "source_type": "court_news",
+      "jurisdiction": "Florida",
+      "description": "Official news from the Florida State Courts System",
+      "auto_approve": true
+    },
+    {
+      "name": "CourtListener SCOTUS",
+      "feed_url": "https://www.courtlistener.com/feed/court/scotus/",
+      "source_type": "opinions",
+      "jurisdiction": "Federal - Supreme Court",
+      "description": "U.S. Supreme Court opinions from CourtListener/Free Law Project",
+      "auto_approve": true
+    },
+    {
+      "name": "CourtListener Florida Supreme Court",
+      "feed_url": "https://www.courtlistener.com/feed/court/fla/",
+      "source_type": "opinions",
+      "jurisdiction": "Florida",
+      "description": "Florida Supreme Court opinions from CourtListener",
+      "auto_approve": true
+    }
+  ],
+  "_comment": "Configured legal RSS feeds for automated import. All sources auto-approved.",
+  "_legal_topics": [
+    "constitutional",
+    "criminal",
+    "civil-procedure",
+    "evidence",
+    "ethics",
+    "contracts",
+    "torts",
+    "property",
+    "administrative",
+    "employment",
+    "intellectual-property",
+    "immigration",
+    "environmental",
+    "other"
+  ]
+}

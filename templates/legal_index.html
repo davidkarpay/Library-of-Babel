@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Legal Content - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_papers %}../papers/index.html{% endblock %}
+{% block nav_podcasts %}../podcasts/index.html{% endblock %}
+{% block nav_blogs %}../blogs/index.html{% endblock %}
+{% block nav_legal %}index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<a href="../index.html" class="back-link">← Back to Library</a>
+
+<div class="page-header">
+    <h2>Legal Content</h2>
+    <p class="subtitle">{{ entries|length }} legal documents from US state bar associations</p>
+</div>
+
+<!-- Licensing Notice -->
+<div class="legal-notice" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.875rem;">
+    <strong>Licensing:</strong> All state rules of professional conduct are <strong>public domain</strong> under the government edicts doctrine
+    (<em>Georgia v. Public.Resource.Org</em>, 590 U.S. ___ (2020)). These are official legal standards adopted by state courts, not the
+    copyrighted ABA Model Rules.
+</div>
+
+<!-- Region Filters -->
+<div class="filters" style="margin-bottom: 1.5rem;">
+    <strong>Filter by region:</strong>
+    <span class="filter-btn active" data-region="all">All ({{ entries|length }})</span>
+    <span class="filter-btn" data-region="state">States (50)</span>
+    <span class="filter-btn" data-region="dc">DC</span>
+    <span class="filter-btn" data-region="territory">Territories</span>
+</div>
+
+<!-- Status Filters -->
+<div class="filters" style="margin-bottom: 1.5rem;">
+    <strong>Status:</strong>
+    {% set placeholder_count = entries | selectattr('status', 'equalto', 'placeholder') | list | length %}
+    {% set full_count = entries | length - placeholder_count %}
+    <span class="status-btn active" data-status="all">All</span>
+    <span class="status-btn" data-status="full">Full Content ({{ full_count }})</span>
+    <span class="status-btn" data-status="placeholder">Placeholder ({{ placeholder_count }})</span>
+</div>
+
+<!-- Legal Content List -->
+<ul class="entry-list legal-list">
+    {% for entry in entries | sort(attribute='jurisdiction') %}
+    <li class="entry-card legal-card"
+        data-jurisdiction="{{ entry.jurisdiction_code | default('') }}"
+        data-status="{{ entry.status | default('full') }}"
+        data-region="{% if entry.jurisdiction_code in ['DC'] %}dc{% elif entry.jurisdiction_code in ['PR', 'GU', 'VI', 'AS', 'MP'] %}territory{% else %}state{% endif %}">
+        <div class="entry-header">
+            <span class="content-type-badge legal-badge">Legal</span>
+            {% if entry.status == 'placeholder' %}
+            <span class="placeholder-badge" style="background: var(--text-muted); color: var(--bg-primary); padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Placeholder</span>
+            {% endif %}
+            <a href="{{ entry._filename }}.html" class="entry-title">{{ entry.title }}</a>
+        </div>
+        <div class="entry-meta">
+            <span class="jurisdiction-code" style="font-weight: bold;">{{ entry.jurisdiction_code | default('') }}</span>
+            {% if entry.authority %}
+            •
+            <span class="authority">{{ entry.authority }}</span>
+            {% endif %}
+            •
+            <span class="date">Added: {{ entry.added_date }}</span>
+        </div>
+        {% if entry.summary %}
+        <div class="entry-summary">
+            {{ entry.summary[0][:150] }}{% if entry.summary[0]|length > 150 %}...{% endif %}
+        </div>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+{% if entries|length == 0 %}
+<p class="empty-state">No legal content imported yet. Run <code>python state_bar_rules.py --jurisdiction all</code> to create placeholders for all US jurisdictions.</p>
+{% endif %}
+
+<script>
+// Region filtering
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const region = btn.dataset.region;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('.legal-card').forEach(card => {
+            const cardRegion = card.dataset.region;
+            if (region === 'all' || cardRegion === region) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Status filtering
+document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const status = btn.dataset.status;
+        document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('.legal-card').forEach(card => {
+            const cardStatus = card.dataset.status;
+            if (status === 'all' || cardStatus === status) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

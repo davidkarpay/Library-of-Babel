@@ -19,6 +19,7 @@
                 <a href="{% block nav_papers %}papers/index.html{% endblock %}">Papers</a>
                 <a href="{% block nav_podcasts %}podcasts/index.html{% endblock %}">Podcasts</a>
                 <a href="{% block nav_blogs %}blogs/index.html{% endblock %}">Blogs</a>
+                <a href="{% block nav_legal %}legal/index.html{% endblock %}">Legal</a>
                 <a href="{% block nav_channels %}channels/index.html{% endblock %}">Channels</a>
                 <a href="{% block nav_browse %}browse/a.html{% endblock %}">A-Z</a>
             </nav>
@@ -29,7 +30,7 @@
         </main>
 
         <footer style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.85rem;">
-            <p>Learning Library • {{ video_count if video_count else entries|length if entries else total_entries if total_entries else 0 }} videos{% if paper_count %} • {{ paper_count }} papers{% endif %}{% if podcast_count %} • {{ podcast_count }} podcasts{% endif %}{% if blog_count %} • {{ blog_count }} blogs{% endif %}</p>
+            <p>Learning Library • {{ video_count if video_count else entries|length if entries else total_entries if total_entries else 0 }} videos{% if paper_count %} • {{ paper_count }} papers{% endif %}{% if podcast_count %} • {{ podcast_count }} podcasts{% endif %}{% if blog_count %} • {{ blog_count }} blogs{% endif %}{% if legal_count %} • {{ legal_count }} legal{% endif %}{% if journal_count %} • {{ journal_count }} journals{% endif %}</p>
         </footer>
     </div>
     <script src="{% block docent_js %}docent-widget.js{% endblock %}" defer></script>

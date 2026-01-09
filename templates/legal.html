@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_papers %}../papers/index.html{% endblock %}
+{% block nav_podcasts %}../podcasts/index.html{% endblock %}
+{% block nav_blogs %}../blogs/index.html{% endblock %}
+{% block nav_legal %}index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Legislation",
+  "name": "{{ entry.title | e }}",
+  "description": "{{ entry.summary[0] | e if entry.summary else 'Professional conduct rules for attorneys' }}",
+  "legislationType": "Rules of Professional Conduct",
+  "jurisdiction": {
+    "@type": "AdministrativeArea",
+    "name": "{{ entry.jurisdiction | e if entry.jurisdiction else 'Unknown' }}"
+  },
+  "url": "{{ entry.url }}",
+  "license": "{{ entry.license | default('Public Domain') }}"
+}
+</script>
+<a href="../legal/index.html" class="back-link">← Back to Legal Content</a>
+
+<div class="legal-header">
+    <div class="content-type-badge legal-badge">Legal</div>
+    {% if entry.status == 'placeholder' %}
+    <span class="placeholder-badge" title="Content pending full import">Placeholder</span>
+    {% endif %}
+    <h2>{{ entry.title }}</h2>
+
+    <div class="legal-meta" style="margin-top: 0.5rem;">
+        {% if entry.jurisdiction %}
+        <div class="jurisdiction-info">
+            <strong>Jurisdiction:</strong> {{ entry.jurisdiction }}
+            {% if entry.jurisdiction_code %}({{ entry.jurisdiction_code }}){% endif %}
+        </div>
+        {% endif %}
+
+        {% if entry.authority %}
+        <div class="authority-info" style="margin-top: 0.25rem;">
+            <strong>Authority:</strong> {{ entry.authority }}
+        </div>
+        {% endif %}
+
+        <div class="legal-links" style="margin-top: 0.5rem;">
+            {% for topic in entry.facets.topics %}
+            <a href="../topics/{{ topic }}.html" class="tag">{{ topic }}</a>
+            {% endfor %}
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            •
+            <a href="{{ entry.url }}" target="_blank" style="color: var(--accent);">Official Source ↗</a>
+        </div>
+
+        <div class="dates" style="margin-top: 0.25rem; color: var(--text-muted);">
+            Added: {{ entry.added_date }}
+            {% if entry.license %}
+            • License: {{ entry.license }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+{% if entry.summary %}
+<div class="summary">
+    <h3>Overview</h3>
+    <ul>
+        {% for point in entry.summary %}
+        <li>{{ point }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if entry.notes %}
+<div class="notes" style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+    <strong>Notes:</strong> {{ entry.notes }}
+</div>
+{% endif %}
+
+<!-- Sections/Rules Navigation -->
+{% if entry.sections and entry.sections|length > 0 %}
+<div class="sections-nav">
+    <h3>Rules</h3>
+    <ul>
+        {% for section in entry.sections %}
+        <li>
+            <strong>{{ section.title }}</strong>
+            {% if section.description %} - {{ section.description }}{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Full Content -->
+{% if markdown_content %}
+<div class="legal-content">
+    <h3>Full Text</h3>
+    {{ markdown_content | safe }}
+</div>
+{% endif %}
+
+<!-- Attribution -->
+<div class="attribution" style="margin-top: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.875rem; color: var(--text-muted);">
+    {{ entry.attribution | default('Public domain content - Government edicts doctrine per Georgia v. Public.Resource.Org (2020).') }}
+</div>
+
+{% endblock %}

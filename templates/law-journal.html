@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.title }} - Learning Library{% endblock %}
+{% block css_path %}../assets/style.css{% endblock %}
+{% block home_path %}../index.html{% endblock %}
+{% block nav_home %}../index.html{% endblock %}
+{% block nav_papers %}../papers/index.html{% endblock %}
+{% block nav_podcasts %}../podcasts/index.html{% endblock %}
+{% block nav_blogs %}../blogs/index.html{% endblock %}
+{% block nav_legal %}../legal/index.html{% endblock %}
+{% block nav_journals %}index.html{% endblock %}
+{% block nav_channels %}../channels/index.html{% endblock %}
+{% block nav_browse %}../browse/a.html{% endblock %}
+
+{% block content %}
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ScholarlyArticle",
+  "name": "{{ entry.title | e }}",
+  "description": "{{ entry.abstract | e if entry.abstract else (entry.summary[0] | e if entry.summary else '') }}",
+  "author": [
+    {% for author in entry.authors %}
+    {
+      "@type": "Person",
+      "name": "{{ author.name | e }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "isPartOf": {
+    "@type": "Periodical",
+    "name": "{{ entry.journal.name | e }}"
+  },
+  "url": "{{ entry.url }}",
+  "datePublished": "{{ entry.published_date }}"
+}
+</script>
+<a href="../journals/index.html" class="back-link">← Back to Law Journals</a>
+
+<div class="journal-header">
+    <div class="content-type-badge journal-badge">Law Journal</div>
+    <h2>{{ entry.title }}</h2>
+
+    <div class="journal-meta" style="margin-top: 0.5rem;">
+        <!-- Authors -->
+        {% if entry.authors %}
+        <div class="authors-info">
+            <strong>Authors:</strong>
+            {% for author in entry.authors %}
+                {{ author.name }}{% if author.affiliation %} ({{ author.affiliation }}){% endif %}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Journal Info -->
+        <div class="journal-info" style="margin-top: 0.25rem;">
+            <strong>Journal:</strong>
+            <a href="{{ entry.journal.url }}" target="_blank" style="color: var(--accent);">{{ entry.journal.name }}</a>
+            {% if entry.journal.institution %}
+            <span style="color: var(--text-muted);">• {{ entry.journal.institution }}</span>
+            {% endif %}
+        </div>
+
+        <div class="journal-links" style="margin-top: 0.5rem;">
+            {% for topic in entry.legal_topics %}
+            <span class="tag legal-topic">{{ topic }}</span>
+            {% endfor %}
+            <span class="difficulty">{{ entry.facets.difficulty }}</span>
+            •
+            <a href="{{ entry.url }}" target="_blank" style="color: var(--accent);">View Article ↗</a>
+        </div>
+
+        <div class="dates" style="margin-top: 0.25rem; color: var(--text-muted);">
+            {% if entry.published_date %}Published: {{ entry.published_date }} • {% endif %}
+            Added: {{ entry.added_date }}
+            {% if entry.word_count %}• {{ entry.word_count }} words{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Abstract -->
+{% if entry.abstract %}
+<div class="abstract" style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--accent);">
+    <h3>Abstract</h3>
+    <p>{{ entry.abstract }}</p>
+</div>
+{% endif %}
+
+<!-- Summary/Key Points -->
+{% if entry.summary %}
+<div class="summary">
+    <h3>Key Points</h3>
+    <ul>
+        {% for point in entry.summary %}
+        <li>{{ point }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Full Content/Excerpt -->
+{% if markdown_content %}
+<div class="journal-content">
+    <h3>Article Excerpt</h3>
+    {{ markdown_content | safe }}
+</div>
+{% endif %}
+
+<!-- Attribution -->
+<div class="attribution" style="margin-top: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.875rem; color: var(--text-muted);">
+    {{ entry.attribution | default('Content retrieved via RSS feed.') }}
+    {% if entry.access_type %}
+    <br>Access: {{ entry.access_type }}
+    {% endif %}
+</div>
+
+{% endblock %}

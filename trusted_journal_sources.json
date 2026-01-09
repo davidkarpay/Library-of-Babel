@@ -1,0 +1,70 @@
+{
+  "journal_feeds": [
+    {
+      "name": "Journal of Criminal Law & Criminology",
+      "feed_url": "https://scholarlycommons.law.northwestern.edu/jclc/recent.rss",
+      "institution": "Northwestern University",
+      "focus_areas": ["criminal-law", "criminal-procedure"],
+      "access_type": "open",
+      "auto_approve": true
+    },
+    {
+      "name": "Stanford Law Review",
+      "feed_url": "https://www.stanfordlawreview.org/feed/",
+      "institution": "Stanford Law School",
+      "focus_areas": ["constitutional", "criminal-procedure"],
+      "access_type": "open",
+      "auto_approve": true
+    },
+    {
+      "name": "Yale Law Journal Forum",
+      "feed_url": "https://www.yalelawjournal.org/forum/feed",
+      "institution": "Yale Law School",
+      "focus_areas": ["constitutional", "criminal-procedure", "critical-race-theory"],
+      "access_type": "open",
+      "auto_approve": true
+    },
+    {
+      "name": "Harvard Law Review Blog",
+      "feed_url": "https://blog.harvardlawreview.org/feed/",
+      "institution": "Harvard Law School",
+      "focus_areas": ["constitutional", "criminal-procedure"],
+      "access_type": "open",
+      "auto_approve": true
+    },
+    {
+      "name": "Columbia Law Review",
+      "feed_url": "https://columbialawreview.org/feed/",
+      "institution": "Columbia Law School",
+      "focus_areas": ["criminal-law", "constitutional"],
+      "access_type": "open",
+      "auto_approve": true
+    }
+  ],
+  "_comment": "Law school journal RSS feeds for automated import. Focus areas: criminal law, CRT, abolitionism, criminal procedure, indigent defense.",
+  "_legal_topics": [
+    "criminal-law",
+    "criminal-procedure",
+    "critical-race-theory",
+    "abolitionism",
+    "indigent-defense",
+    "mass-incarceration",
+    "constitutional",
+    "evidence",
+    "civil-rights",
+    "policing",
+    "sentencing",
+    "other"
+  ],
+  "_search_keywords": [
+    "critical race theory criminal",
+    "penal abolitionism",
+    "prison abolition",
+    "indigent defense",
+    "public defender",
+    "mass incarceration",
+    "police reform",
+    "criminal justice reform",
+    "bail reform"
+  ]
+}

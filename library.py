@@ -43,7 +43,35 @@ def load_library() -> list:
 
     # Sort by date added, newest first
     entries.sort(key=lambda x: x.get("added_date", ""), reverse=True)
+
+    # Infer domain for each entry (backward compatibility)
+    for entry in entries:
+        if "domain" not in entry:
+            entry["domain"] = infer_domain(entry)
+
     return entries
+
+
+def infer_domain(metadata: dict) -> str:
+    """
+    Infer domain from metadata for backward compatibility.
+
+    Returns:
+        "law" for legal content, "computer-science" for everything else
+    """
+    content_type = metadata.get("content_type", "")
+
+    # Legal content types
+    if content_type in ("legal", "law-journal"):
+        return "law"
+
+    # Check topics for legal content
+    topics = metadata.get("facets", {}).get("topics", [])
+    if "legal" in topics:
+        return "law"
+
+    # Default to computer science
+    return "computer-science"
 
 
 def build_facet_index(entries: list) -> dict:
@@ -94,8 +122,8 @@ def build_alpha_index(entries: list) -> dict:
 
 
 def build_content_type_index(entries: list) -> dict:
-    """Build index of entries by content type (video/paper/podcast/blog)."""
-    index = {"video": [], "paper": [], "podcast": [], "blog": []}
+    """Build index of entries by content type (video/paper/podcast/blog/course/legal/law-journal)."""
+    index = {"video": [], "paper": [], "podcast": [], "blog": [], "course": [], "legal": [], "law-journal": []}
     for entry in entries:
         content_type = entry.get("content_type", "video")
         if content_type in index:
@@ -169,7 +197,10 @@ def generate_site():
     paper_count = len(content_type_index["paper"])
     podcast_count = len(content_type_index["podcast"])
     blog_count = len(content_type_index["blog"])
-    print(f"  Videos: {video_count}, Papers: {paper_count}, Podcasts: {podcast_count}, Blogs: {blog_count}")
+    course_count = len(content_type_index["course"])
+    legal_count = len(content_type_index["legal"])
+    journal_count = len(content_type_index["law-journal"])
+    print(f"  Videos: {video_count}, Papers: {paper_count}, Podcasts: {podcast_count}, Blogs: {blog_count}, Courses: {course_count}, Legal: {legal_count}, Journals: {journal_count}")
 
     # Set up Jinja environment
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
@@ -185,6 +216,8 @@ def generate_site():
     (SITE_DIR / "podcasts").mkdir()
     (SITE_DIR / "shows").mkdir()
     (SITE_DIR / "blogs").mkdir()
+    (SITE_DIR / "courses").mkdir()
+    (SITE_DIR / "legal").mkdir()
     (SITE_DIR / "channels").mkdir()
     (SITE_DIR / "browse").mkdir()
     (SITE_DIR / "assets").mkdir()
@@ -215,7 +248,9 @@ def generate_site():
         video_count=video_count,
         paper_count=paper_count,
         podcast_count=podcast_count,
-        blog_count=blog_count
+        blog_count=blog_count,
+        course_count=course_count,
+        total_entries=len(entries)
     )
     (SITE_DIR / "index.html").write_text(index_html)
 
@@ -435,6 +470,184 @@ def generate_site():
         except Exception as e:
             print(f"  Warning: Could not generate blog pages: {e}")
 
+    # Generate course pages
+    if course_count > 0:
+        print("Generating course pages...")
+        COURSES_DIR = BASE_DIR / "courses"
+        try:
+            course_template = env.get_template("course.html")
+            for entry in content_type_index["course"]:
+                entry["slug"] = entry["_filename"]
+
+                # Read the markdown content
+                md_file = COURSES_DIR / f"{entry['_filename']}.md"
+                if md_file.exists():
+                    md_content = md_file.read_text()
+                else:
+                    md_content = ""
+
+                course_html = course_template.render(
+                    entry=entry,
+                    markdown_content=md_content,
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count,
+                    course_count=course_count
+                )
+                (SITE_DIR / "courses" / f"{entry['_filename']}.html").write_text(course_html)
+
+            # Generate courses index page
+            print("Generating courses index...")
+            try:
+                courses_index_template = env.get_template("courses_index.html")
+                courses_index_html = courses_index_template.render(
+                    entries=content_type_index["course"],
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count,
+                    course_count=course_count
+                )
+                (SITE_DIR / "courses" / "index.html").write_text(courses_index_html)
+            except Exception as e:
+                print(f"  Warning: Could not generate courses index: {e}")
+
+        except Exception as e:
+            print(f"  Warning: Could not generate course pages: {e}")
+
+    # Generate legal content pages
+    if legal_count > 0:
+        print("Generating legal pages...")
+        LEGAL_DIR = BASE_DIR / "legal"
+        try:
+            legal_template = env.get_template("legal.html")
+            for entry in content_type_index["legal"]:
+                entry["slug"] = entry["_filename"]
+
+                # Read the markdown content
+                md_file = LEGAL_DIR / f"{entry['_filename']}.md"
+                if md_file.exists():
+                    md_content = md_file.read_text()
+                else:
+                    md_content = ""
+
+                legal_html = legal_template.render(
+                    entry=entry,
+                    markdown_content=md_content,
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count,
+                    course_count=course_count,
+                    legal_count=legal_count
+                )
+                (SITE_DIR / "legal" / f"{entry['_filename']}.html").write_text(legal_html)
+
+            # Generate legal index page
+            print("Generating legal index...")
+            try:
+                # Group by jurisdiction for better organization
+                jurisdictions = {}
+                for entry in content_type_index["legal"]:
+                    code = entry.get("jurisdiction_code", "OTHER")
+                    jurisdiction_name = entry.get("jurisdiction", "Other")
+                    if code not in jurisdictions:
+                        jurisdictions[code] = {
+                            "code": code,
+                            "name": jurisdiction_name,
+                            "entries": []
+                        }
+                    jurisdictions[code]["entries"].append(entry)
+
+                legal_index_template = env.get_template("legal_index.html")
+                legal_index_html = legal_index_template.render(
+                    entries=content_type_index["legal"],
+                    jurisdictions=jurisdictions,
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count,
+                    course_count=course_count,
+                    legal_count=legal_count
+                )
+                (SITE_DIR / "legal" / "index.html").write_text(legal_index_html)
+            except Exception as e:
+                print(f"  Warning: Could not generate legal index: {e}")
+
+        except Exception as e:
+            print(f"  Warning: Could not generate legal pages: {e}")
+
+    # Generate law journal pages
+    if journal_count > 0:
+        print("Generating law journal pages...")
+        JOURNALS_DIR = BASE_DIR / "journals"
+        (SITE_DIR / "journals").mkdir(parents=True, exist_ok=True)
+        try:
+            journal_template = env.get_template("law-journal.html")
+            for entry in content_type_index["law-journal"]:
+                entry["slug"] = entry["_filename"]
+
+                # Read the markdown content
+                md_file = JOURNALS_DIR / f"{entry['_filename']}.md"
+                if md_file.exists():
+                    md_content = md_file.read_text()
+                else:
+                    md_content = ""
+
+                journal_html = journal_template.render(
+                    entry=entry,
+                    markdown_content=md_content,
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count,
+                    course_count=course_count,
+                    legal_count=legal_count,
+                    journal_count=journal_count
+                )
+                (SITE_DIR / "journals" / f"{entry['_filename']}.html").write_text(journal_html)
+
+            # Generate journals index page
+            print("Generating journals index...")
+            try:
+                # Group by journal for better organization
+                journals = {}
+                for entry in content_type_index["law-journal"]:
+                    journal_info = entry.get("journal", {})
+                    journal_slug = journal_info.get("slug", "unknown-journal")
+                    journal_name = journal_info.get("name", "Unknown Journal")
+                    if journal_slug not in journals:
+                        journals[journal_slug] = {
+                            "slug": journal_slug,
+                            "name": journal_name,
+                            "institution": journal_info.get("institution", ""),
+                            "entries": []
+                        }
+                    journals[journal_slug]["entries"].append(entry)
+
+                # Use legal_index.html as base for now (can create dedicated template later)
+                journals_index_template = env.get_template("legal_index.html")
+                journals_index_html = journals_index_template.render(
+                    entries=content_type_index["law-journal"],
+                    jurisdictions=journals,  # Reuse jurisdictions template variable
+                    video_count=video_count,
+                    paper_count=paper_count,
+                    podcast_count=podcast_count,
+                    blog_count=blog_count,
+                    course_count=course_count,
+                    legal_count=legal_count,
+                    journal_count=journal_count,
+                    page_title="Law Journals",
+                    is_journals=True
+                )
+                (SITE_DIR / "journals" / "index.html").write_text(journals_index_html)
+            except Exception as e:
+                print(f"  Warning: Could not generate journals index: {e}")
+
+        except Exception as e:
+            print(f"  Warning: Could not generate journal pages: {e}")
+
     # Write library.json
     print("Writing library.json...")
     library_data = {
@@ -449,7 +662,10 @@ def generate_site():
         "video_count": video_count,
         "paper_count": paper_count,
         "podcast_count": podcast_count,
-        "blog_count": blog_count
+        "blog_count": blog_count,
+        "course_count": course_count,
+        "legal_count": legal_count,
+        "journal_count": journal_count
     }
     with open(SITE_DIR / "library.json", "w") as f:
         json.dump(library_data, f, indent=2)
@@ -457,6 +673,10 @@ def generate_site():
     # Also save to root for agent access
     with open(BASE_DIR / "library.json", "w") as f:
         json.dump(library_data, f, indent=2)
+
+    # Generate agent discovery files
+    print("Generating agent discovery files...")
+    generate_agent_files(entries, facet_index, content_type_index)
 
     print(f"\nSite generated at: {SITE_DIR}")
     print(f"Open {SITE_DIR / 'index.html'} in a browser to view")
@@ -472,6 +692,11 @@ def write_css():
     --text: #eee;
     --text-muted: #888;
     --border: #333;
+    /* Domain accent colors */
+    --domain-law: #7f1d1d;
+    --domain-computer-science: #1e3a8a;
+    --law-tint: rgba(127,29,29,.18);
+    --cs-tint: rgba(30,58,138,.16);
 }
 
 * {
@@ -1364,6 +1589,25 @@ header a {
     color: white;
 }
 
+.legal-badge {
+    background: #7f1d1d;
+    color: white;
+}
+
+.journal-badge {
+    background: #be185d;
+    color: white;
+}
+
+/* Entry badges container */
+.entry-badges {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
 .paper-header {
     margin-bottom: 2rem;
 }
@@ -1459,6 +1703,88 @@ header a {
     line-height: 1.5;
 }
 
+/* Domain separation styles */
+.entry-card {
+    position: relative;
+    border-left: 4px solid var(--border);
+}
+
+.entry-card.domain-law {
+    border-left-color: var(--domain-law);
+}
+
+.entry-card.domain-computer-science {
+    border-left-color: var(--domain-computer-science);
+}
+
+/* Domain badge */
+.domain-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+}
+
+.domain-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.domain-badge.law {
+    border-color: rgba(127,29,29,.5);
+    color: #fca5a5;
+}
+
+.domain-badge.law::before {
+    background: var(--domain-law);
+}
+
+.domain-badge.computer-science {
+    border-color: rgba(30,58,138,.5);
+    color: #93c5fd;
+}
+
+.domain-badge.computer-science::before {
+    background: var(--domain-computer-science);
+}
+
+/* Domain filter toggle */
+.domain-filter {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-left: 1rem;
+}
+
+.domain-filter a {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.domain-filter a:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.domain-filter a.active {
+    background: var(--bg-light);
+    color: var(--text);
+}
+
 .tag-small {
     font-size: 0.75rem;
     padding: 0.15rem 0.5rem;
@@ -1535,6 +1861,279 @@ header a {
         max-height: 250px;
     }
 }
+
+/* === Hero Section (Above the Fold) === */
+.hero {
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.hero-search {
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.hero-search input {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    background: var(--bg-light);
+    border: 2px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text);
+    font-size: 1.1rem;
+}
+
+.hero-search input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.hero-search input::placeholder {
+    color: var(--text-muted);
+}
+
+.hero-search button {
+    padding: 1rem 1.5rem;
+    background: var(--accent);
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.hero-search button:hover {
+    opacity: 0.9;
+}
+
+.hero-search #clear-search {
+    background: var(--bg-light);
+    border: 2px solid var(--border);
+    color: var(--text);
+}
+
+.hero-chat {
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.hero-chat input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.hero-chat input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.hero-chat input::placeholder {
+    color: var(--text-muted);
+}
+
+.hero-chat button {
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-light);
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.hero-chat button:hover {
+    background: var(--accent);
+    color: white;
+}
+
+/* Docent Desk */
+.docent-desk {
+    margin-top: 1rem;
+}
+
+.docent-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 1rem;
+    transition: color 0.2s;
+}
+
+.docent-icon:hover {
+    color: var(--accent);
+}
+
+.docent-icon svg {
+    width: 2rem;
+    height: 2rem;
+}
+
+.docent-icon span {
+    font-size: 0.85rem;
+}
+
+/* Chat Container (Expandable) */
+.chat-container-expandable {
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.chat-container-expandable .chat-messages {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    background: var(--bg);
+    border-radius: 0.25rem;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--accent);
+}
+
+.modal-content h2 {
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+}
+
+.docent-section {
+    margin-bottom: 1.5rem;
+}
+
+.docent-section h3 {
+    color: var(--text);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.docent-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.docent-section li {
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+.docent-section a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.docent-section a:hover {
+    text-decoration: underline;
+}
+
+.docent-section code {
+    background: var(--bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.api-endpoints {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.api-endpoints li {
+    margin-bottom: 0.25rem;
+}
+
+/* Search feedback */
+.search-loading, .search-empty, .search-count {
+    color: var(--text-muted);
+    padding: 1rem;
+}
+
+.search-count {
+    margin-bottom: 1rem;
+}
+
+/* Mobile hero adjustments */
+@media (max-width: 600px) {
+    .hero {
+        min-height: 40vh;
+        padding: 1rem;
+    }
+
+    .hero-search input, .hero-chat input {
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .hero-search button, .hero-chat button {
+        padding: 0.75rem 1rem;
+    }
+}
 '''
     (SITE_DIR / "assets" / "style.css").write_text(css)
 
@@ -1555,6 +2154,204 @@ def copy_widget_files():
         print("  Copied docent-widget.css")
     else:
         print("  Warning: docent-widget.css not found")
+
+
+def generate_agent_files(entries: list, facet_index: dict, content_type_index: dict):
+    """Generate agent discovery files: robots.txt, sitemap.xml, llms.txt, ai.json."""
+    from datetime import datetime
+
+    total = len(entries)
+    video_count = len(content_type_index["video"])
+    paper_count = len(content_type_index["paper"])
+    podcast_count = len(content_type_index["podcast"])
+    blog_count = len(content_type_index["blog"])
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # robots.txt
+    robots_txt = f"""# Learning Library - robots.txt
+# Last updated: {today}
+
+User-agent: *
+Allow: /
+
+# Agent discovery files
+# /llms.txt - AI agent guide
+# /.well-known/ai.json - API capabilities
+# /library.json - Full content index
+
+Sitemap: https://library.davidkarpay.com/sitemap.xml
+"""
+    (SITE_DIR / "robots.txt").write_text(robots_txt)
+    print("  Generated robots.txt")
+
+    # sitemap.xml
+    sitemap_entries = ['<?xml version="1.0" encoding="UTF-8"?>']
+    sitemap_entries.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    # Static pages
+    static_pages = [
+        ("", "1.0", "daily"),
+        ("papers/index.html", "0.8", "daily"),
+        ("podcasts/index.html", "0.8", "daily"),
+        ("blogs/index.html", "0.8", "daily"),
+        ("channels/index.html", "0.7", "weekly"),
+    ]
+    for page, priority, changefreq in static_pages:
+        sitemap_entries.append(f"""  <url>
+    <loc>https://library.davidkarpay.com/{page}</loc>
+    <priority>{priority}</priority>
+    <changefreq>{changefreq}</changefreq>
+  </url>""")
+
+    # Content pages
+    for entry in entries:
+        content_type = entry.get("content_type", "video")
+        filename = entry.get("_filename", "")
+        if not filename:
+            continue
+
+        if content_type == "paper":
+            path = f"papers/{filename}.html"
+        elif content_type == "podcast":
+            path = f"podcasts/{filename}.html"
+        elif content_type == "blog":
+            path = f"blogs/{filename}.html"
+        else:
+            path = f"transcripts/{filename}.html"
+
+        sitemap_entries.append(f"""  <url>
+    <loc>https://library.davidkarpay.com/{path}</loc>
+    <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
+  </url>""")
+
+    sitemap_entries.append('</urlset>')
+    (SITE_DIR / "sitemap.xml").write_text('\n'.join(sitemap_entries))
+    print(f"  Generated sitemap.xml ({len(entries) + len(static_pages)} URLs)")
+
+    # llms.txt - AI agent discovery guide
+    topics_list = ", ".join(sorted(facet_index["topics"].keys()))
+    llms_txt = f"""# Learning Library - AI Agent Guide
+# Last updated: {today}
+# Total items: {total}
+
+## Description
+A curated learning library containing educational content on technology, programming, AI/ML, security, and more.
+
+Content types:
+- Videos: {video_count} (YouTube transcripts with timestamps)
+- Papers: {paper_count} (Research papers with abstracts)
+- Podcasts: {podcast_count} (Audio transcripts)
+- Blogs: {blog_count} (Technical articles)
+
+Topics: {topics_list}
+
+## Quick Access
+
+Data:
+- /library.json - Complete index with all metadata ({total} items)
+- /sitemap.xml - All page URLs
+- /.well-known/ai.json - Machine-readable API capabilities
+
+## REST API
+
+Base URL: https://youtube-library-docent.dlkarpay.workers.dev
+
+Endpoints:
+- GET /api/search?q=<query>&type=video|paper|podcast|blog|all&topic=<topic>&limit=20
+- GET /api/recommend?topic=<topic>&level=beginner|intermediate|advanced&limit=10
+- GET /api/learning-path?goal=<learning_goal>
+- GET /api/whats-new?days=7&type=all
+- GET /api/content/<id>
+- GET /api/stats
+- GET /api/facets
+- POST /api/chat {{"message": "...", "context": []}}
+
+## MCP Server
+
+For Claude Desktop integration, add to claude_desktop_config.json:
+{{
+  "mcpServers": {{
+    "learning-library": {{
+      "command": "python",
+      "args": ["/path/to/mcp_docent_server.py"]
+    }}
+  }}
+}}
+
+MCP Tools: search_library, recommend_by_topic, get_learning_path, find_related_content, get_whats_new, get_content_excerpt
+
+## Schema
+
+Content entry structure:
+{{
+  "id": "unique-id",
+  "content_type": "video|paper|podcast|blog",
+  "title": "Title",
+  "url": "source-url",
+  "facets": {{
+    "topics": ["ai-ml", "security"],
+    "format": "tutorial|deep-dive|research-paper",
+    "difficulty": "beginner|intermediate|advanced"
+  }},
+  "summary": ["Key point 1", "Key point 2"],
+  "sections": [{{"title": "...", "description": "..."}}]
+}}
+
+## Rate Limits
+- API: 100 requests/minute per IP
+- For bulk access, use /library.json directly
+"""
+    (SITE_DIR / "llms.txt").write_text(llms_txt)
+    print("  Generated llms.txt")
+
+    # .well-known/ai.json
+    (SITE_DIR / ".well-known").mkdir(exist_ok=True)
+    ai_json = {
+        "version": "1.0",
+        "name": "Learning Library",
+        "description": f"Curated educational content library with {total} items",
+        "updated": today,
+        "content": {
+            "total": total,
+            "videos": video_count,
+            "papers": paper_count,
+            "podcasts": podcast_count,
+            "blogs": blog_count
+        },
+        "topics": sorted(facet_index["topics"].keys()),
+        "api": {
+            "base_url": "https://youtube-library-docent.dlkarpay.workers.dev",
+            "endpoints": [
+                {"path": "/api/search", "method": "GET", "params": ["q", "type", "topic", "difficulty", "limit"]},
+                {"path": "/api/recommend", "method": "GET", "params": ["topic", "level", "limit"]},
+                {"path": "/api/learning-path", "method": "GET", "params": ["goal"]},
+                {"path": "/api/whats-new", "method": "GET", "params": ["days", "type"]},
+                {"path": "/api/content/{id}", "method": "GET"},
+                {"path": "/api/chat", "method": "POST"}
+            ]
+        },
+        "data": {
+            "library_json": "https://library.davidkarpay.com/library.json",
+            "sitemap": "https://library.davidkarpay.com/sitemap.xml",
+            "llms_txt": "https://library.davidkarpay.com/llms.txt"
+        },
+        "mcp": {
+            "available": True,
+            "script": "mcp_docent_server.py",
+            "tools": [
+                "search_library",
+                "recommend_by_topic",
+                "get_learning_path",
+                "find_related_content",
+                "get_whats_new",
+                "get_content_excerpt"
+            ]
+        }
+    }
+    with open(SITE_DIR / ".well-known" / "ai.json", "w") as f:
+        json.dump(ai_json, f, indent=2)
+    print("  Generated .well-known/ai.json")
 
 
 if __name__ == "__main__":
