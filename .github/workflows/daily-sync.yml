@@ -9,12 +9,14 @@ on:
       sources:
         description: 'Sources to sync'
         required: false
-        default: 'huggingface arxiv'
+        default: 'huggingface arxiv legal'
         type: choice
         options:
           - 'huggingface'
           - 'arxiv'
+          - 'legal'
           - 'huggingface arxiv'
+          - 'huggingface arxiv legal'
       date:
         description: 'Specific date to sync (YYYY-MM-DD)'
         required: false
@@ -29,11 +31,15 @@ on:
       arxiv_categories:
         description: 'arXiv categories (space-separated)'
         required: false
-        default: 'cs.AI cs.LG cs.CL'
+        default: 'cs.AI cs.LG cs.CL cs.CV cs.SE cs.CR cs.DC cs.DB eess.SY eess.IV econ.EM econ.GN econ.TH'
       arxiv_limit:
         description: 'Max papers from arXiv'
         required: false
         default: '20'
+      legal_limit:
+        description: 'Max items from legal RSS feeds'
+        required: false
+        default: '10'
 
 jobs:
   sync-papers:
@@ -61,14 +67,16 @@ jobs:
           OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
           OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
           OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+          COURTLISTENER_API_KEY: ${{ secrets.COURTLISTENER_API_KEY }}
         run: |
           # Build the sync command
-          SOURCES="${{ github.event.inputs.sources || 'huggingface arxiv' }}"
+          SOURCES="${{ github.event.inputs.sources || 'huggingface arxiv legal' }}"
           MIN_UPVOTES="${{ github.event.inputs.min_upvotes || '10' }}"
-          ARXIV_CATEGORIES="${{ github.event.inputs.arxiv_categories || 'cs.AI cs.LG cs.CL' }}"
+          ARXIV_CATEGORIES="${{ github.event.inputs.arxiv_categories || 'cs.AI cs.LG cs.CL cs.CV cs.SE cs.CR cs.DC cs.DB eess.SY eess.IV econ.EM econ.GN econ.TH' }}"
           ARXIV_LIMIT="${{ github.event.inputs.arxiv_limit || '20' }}"
+          LEGAL_LIMIT="${{ github.event.inputs.legal_limit || '10' }}"
 
-          CMD="python sync_daily.py --source $SOURCES --min-upvotes $MIN_UPVOTES --arxiv-categories $ARXIV_CATEGORIES --arxiv-limit $ARXIV_LIMIT"
+          CMD="python sync_daily.py --source $SOURCES --min-upvotes $MIN_UPVOTES --arxiv-categories $ARXIV_CATEGORIES --arxiv-limit $ARXIV_LIMIT --legal-limit $LEGAL_LIMIT"
 
           if [ -n "${{ github.event.inputs.date }}" ]; then
             CMD="$CMD --date ${{ github.event.inputs.date }}"
